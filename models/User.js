@@ -1,32 +1,70 @@
-// models/User.js
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-// تعريف مخطط (Schema) المستخدم
 const userSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true, // يجب أن يكون موجوداً
-        unique: true,   // يجب أن يكون فريداً (لا يمكن لمستخدمين أن يكون لديهم نفس اسم المستخدم)
-        trim: true      // إزالة المسافات البيضاء من البداية والنهاية
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true // تحويل البريد الإلكتروني إلى حروف صغيرة
-    },
-    password: { // في مشروع حقيقي، يجب تشفير كلمة المرور هنا!
-        type: String,
-        required: true
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now // التاريخ الافتراضي هو وقت الإنشاء الحالي
-    }
+  name: {
+    type: String,
+    required: [true, 'Please provide your name.'],
+  },
+  email: {
+    type: String,
+    required: [true, 'Please provide your email.'],
+    unique: true,
+    lowercase: true,
+  },
+  password: {
+    type: String,
+    required: [true, 'Please provide a password.'],
+    minlength: 8,
+    select: false,
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'store-owner'],
+    default: 'user',
+  },
+  store: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Store',
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// إنشاء نموذج (Model) من المخطط
+// Virtuals for user's ratings and comments
+userSchema.virtual('ratings', {
+  ref: 'Rating',
+  localField: '_id',
+  foreignField: 'user'
+});
+
+userSchema.virtual('comments', {
+  ref: 'Comment',
+  localField: '_id',
+  foreignField: 'user'
+});
+
+
+// Encrypt password using bcrypt before saving
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+// Method to check password correctness
+userSchema.methods.correctPassword = async function (
+  candidatePassword,
+  userPassword
+) {
+  return await bcrypt.compare(candidatePassword, userPassword);
+};
+
 const User = mongoose.model('User', userSchema);
 
-module.exports = User; // تصدير النموذج لاستخدامه في الـ API
+module.exports = User;

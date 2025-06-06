@@ -1,38 +1,36 @@
-// routes/uploadRoutes.js
-
 const express = require('express');
+const multer = require('multer');
+const { protect } = require('../middleware/auth');
+
+console.log('---');
+console.log('ℹ️ (3) File [routes/uploadRoutes.js] is requiring the upload controller...');
+const uploadController = require('../controllers/uploadController');
+console.log('✅ (4) Imported `uploadController` object is:', uploadController);
+console.log('➡️ (5) The type of `uploadController.uploadImage` is:', typeof uploadController.uploadImage);
+console.log('---');
+
+
 const router = express.Router();
-const multer = require('multer'); // استيراد Multer
-const imagekit = require('../utils/imagekit'); // استيراد ImageKit المهيأ
-const auth = require('../middleware/auth'); // middleware المصادقة
 
-// إعداد Multer لتخزين الملف في الذاكرة مؤقتًا
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-// مسار لرفع صورة واحدة (مثلاً: صورة متجر أو منتج)
-// POST /api/upload/single
-router.post('/single', auth, upload.single('image'), async (req, res) => {
-    // 'image' هنا هو اسم الحقل الذي يجب أن يكون في FormData من الواجهة الأمامية
-    try {
-        if (!req.file) {
-            return res.status(400).json({ msg: 'No image file uploaded' });
-        }
-
-        // رفع الصورة إلى ImageKit
-        const result = await imagekit.upload({
-            file: req.file.buffer, // بيانات الصورة الثنائية
-            fileName: req.file.originalname, // اسم الملف الأصلي
-            folder: '/ecommerce_platform', // اسم المجلد في ImageKit لتنظيم الصور
-        });
-
-        // إرجاع رابط الصورة المرفوعة
-        res.json({ imageUrl: result.url });
-
-    } catch (err) {
-        console.error('ImageKit upload error:', err.message);
-        res.status(500).send('Server error during image upload');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image')) {
+      cb(null, true);
+    } else {
+      cb(new AppError('Not an image! Please upload only images.', 400), false);
     }
+  }
 });
+
+router.post(
+  '/',
+  protect,
+  upload.single('image'),
+  uploadController.uploadImage
+);
 
 module.exports = router;

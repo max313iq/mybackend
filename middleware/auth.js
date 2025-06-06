@@ -1,21 +1,62 @@
-// middleware/auth.js
+const { promisify } = require('util');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
-// هذه دالة middleware بسيطة جداً للتحقق من المصادقة
-// في تطبيق حقيقي، ستتحقق هنا من وجود JWT (JSON Web Token) وصلاحيته
-const authMiddleware = (req, res, next) => {
-    // مؤقتاً لغرض الاختبار: افترض أن معرف المستخدم موجود في req.header('user-id')
-    // أو يمكنك افتراض وجود مستخدم افتراضي إذا كنت تختبر بدون تسجيل دخول فعلي
-    const userId = req.header('user-id'); // أو req.user.id بعد مصادقة كاملة
+exports.protect = catchAsync(async (req, res, next) => {
+  // 1) Getting token and check of it's there
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
 
-    if (!userId) {
-        return res.status(401).json({ msg: 'No token, authorization denied' });
+  if (!token) {
+    return next(
+      new AppError('You are not logged in! Please log in to get access.', 401)
+    );
+  }
+
+  // 2) Verification token
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  // 3) Check if user still exists
+  const currentUser = await User.findById(decoded.id);
+  if (!currentUser) {
+    return next(
+      new AppError(
+        'The user belonging to this token does no longer exist.',
+        401
+      )
+    );
+  }
+
+  // GRANT ACCESS TO PROTECTED ROUTE
+  req.user = currentUser;
+  next();
+});
+
+// 👇 تم تعديل هذه الدالة لإضافة أوامر الطباعة
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    
+    // --- قسم التشخيص ---
+    console.log('--- DEBUG: Inside restrictTo Middleware ---');
+    console.log(`Required Roles: [${roles}]`);
+    console.log(`User's Role: "${req.user.role}"`);
+    console.log(`Does required roles include user's role? --> ${roles.includes(req.user.role)}`);
+    console.log('-------------------------------------------');
+    // --- نهاية قسم التشخيص ---
+
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError('You do not have permission to perform this action', 403)
+      );
     }
 
-    // في تطبيق حقيقي، هنا ستتحقق من صحة الـ token وتستخرج user.id منه
-    // For now, we'll just set a dummy user ID if one is provided
-    req.user = { id: userId }; // قم بتعيين userId في كائن الطلب
-
-    next(); // استدعاء next() للانتقال إلى المسار التالي
+    next();
+  };
 };
-
-module.exports = authMiddleware;
