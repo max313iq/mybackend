@@ -1,91 +1,128 @@
 const Store = require('../models/Store');
 const Order = require('../models/Order');
-const AppError = require('../utils/appError');
-const catchAsync = require('../utils/catchAsync');
 const factory = require('./handlerFactory');
-
-// --- الدوال الخاصة بصاحب المتجر ---
+const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
 exports.createStore = catchAsync(async (req, res, next) => {
-    // 1) Check if user already has a store
-    const existingStore = await Store.findOne({ owner: req.user.id });
-    if (existingStore) {
-        return next(new AppError('You already own a store. You cannot create another one.', 400));
-    }
+  req.body.owner = req.user.id;
+  const newStore = await Store.create(req.body);
 
-    // 2) Create new store
-    const newStore = await Store.create({ ...req.body, owner: req.user.id });
+  // Update user role to store-owner
+  req.user.role = 'store-owner';
+  req.user.store = newStore._id;
+  await req.user.save({ validateBeforeSave: false });
 
-    // 3) Update user's store field
-    req.user.store = newStore._id;
-    await req.user.save({ validateBeforeSave: false });
-
-    res.status(201).json({
-        status: 'success',
-        data: {
-            store: newStore,
-        },
-    });
+  res.status(201).json({
+    success: true,
+    data: newStore,
+  });
 });
 
 exports.getMyStore = catchAsync(async (req, res, next) => {
-    const store = await Store.findOne({ owner: req.user.id }).populate('products');
-    if (!store) {
-        return next(new AppError('You do not have a store yet.', 404));
-    }
-    res.status(200).json({ status: 'success', data: { store } });
+  const store = await Store.findOne({ owner: req.user.id });
+
+  if (!store) {
+    return next(new AppError('No store found for the current user.', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: store,
+  });
 });
 
-exports.updateMyStore = factory.updateOne(Store); // Owners can update their own store
+exports.updateMyStore = catchAsync(async (req, res, next) => {
+  const store = await Store.findOneAndUpdate({ owner: req.user.id }, req.body, {
+    new: true,
+    runValidators: true,
+  });
 
+  if (!store) {
+    return next(new AppError('No store found for the current user to update.', 404));
+  }
 
-// --- دوال إدارة الطلبات الخاصة بالمتجر ---
+  res.status(200).json({
+    success: true,
+    data: store,
+  });
+});
 
 exports.getMyStoreOrders = catchAsync(async (req, res, next) => {
-    const storeId = req.user.store;
-    if (!storeId) {
-        return next(new AppError('You do not own a store.', 400));
+    const store = await Store.findOne({ owner: req.user.id });
+    if (!store) {
+        return next(new AppError('You do not own a store.', 404));
     }
-    const orders = await Order.find({ 'orderItems.store': storeId }).populate('user', 'name email');
+
+    const orders = await Order.find({ store: store._id });
+
     res.status(200).json({
-        status: 'success',
-        results: orders.length,
-        data: {
-            orders
-        }
+        success: true,
+        count: orders.length,
+        data: orders,
     });
 });
 
-exports.updateStoreOrderStatus = catchAsync(async (req, res, next) => {
+exports.updateMyStoreOrderStatus = catchAsync(async (req, res, next) => {
+    const { orderId } = req.params;
     const { status } = req.body;
-    const orderId = req.params.id;
-    const storeId = req.user.store;
 
-    const order = await Order.findById(orderId);
-    if (!order) {
-        return next(new AppError('No order found with that ID', 404));
+    const store = await Store.findOne({ owner: req.user.id });
+    if (!store) {
+        return next(new AppError('You do not own a store.', 403));
     }
 
-    const isStoreOrder = order.orderItems.some(item => item.store.toString() === storeId.toString());
-    if (!isStoreOrder) {
-        return next(new AppError('You are not authorized to update this order.', 403));
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+        return next(new AppError('No order found with that ID.', 404));
+    }
+
+    if (order.store.toString() !== store._id.toString()) {
+        return next(new AppError('This order does not belong to your store.', 403));
     }
 
     order.status = status;
     await order.save();
 
     res.status(200).json({
-        status: 'success',
-        data: {
-            order
-        }
+        success: true,
+        data: order,
     });
 });
 
+exports.followStore = catchAsync(async (req, res, next) => {
+    const store = await Store.findById(req.params.id);
+    if (!store) {
+        return next(new AppError('No store found with that ID', 404));
+    }
 
-// --- الدوال العامة والخاصة بالمدير ---
+    const isFollowing = store.followers.includes(req.user.id);
+
+    if (isFollowing) {
+        // Unfollow
+        await Store.findByIdAndUpdate(req.params.id, { $pull: { followers: req.user.id } });
+        res.status(200).json({ success: true, message: 'Successfully unfollowed the store.' });
+    } else {
+        // Follow
+        await Store.findByIdAndUpdate(req.params.id, { $addToSet: { followers: req.user.id } });
+        res.status(200).json({ success: true, message: 'Successfully followed the store.' });
+    }
+});
+
+exports.getFeaturedStores = catchAsync(async (req, res, next) => {
+    req.query.limit = req.query.limit || '5';
+    req.query.sort = '-ratingsAverage'; // Example criteria for featured
+    next();
+});
+
+exports.getTrendingStores = catchAsync(async (req, res, next) => {
+    req.query.limit = req.query.limit || '5';
+    req.query.sort = '-followers'; // Example criteria for trending
+    next();
+});
+
 
 exports.getAllStores = factory.getAll(Store);
-exports.getStore = factory.getOne(Store, { path: 'products ratings' });
-exports.updateStore = factory.updateOne(Store); // Admin only
-exports.deleteStore = factory.deleteOne(Store); // Admin only
+exports.getStore = factory.getOne(Store, { path: 'products' });
+exports.deleteStore = factory.deleteOne(Store);

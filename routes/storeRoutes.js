@@ -1,51 +1,36 @@
 const express = require('express');
 const storeController = require('../controllers/storeController');
+const reviewController = require('../controllers/reviewController');
 const { protect, restrictTo } = require('../middleware/auth');
-const ratingRouter = require('./ratingRoutes');
-const productRouter = require('./productRoutes');
 
 const router = express.Router();
 
-// --- Nested Routes ---
-// Forward requests like /api/stores/:storeId/ratings to the ratingRouter
-router.use('/:storeId/ratings', ratingRouter);
-router.use('/:storeId/products', productRouter);
+// --- Public Routes ---
+router.get('/', storeController.getAllStores);
+router.get('/featured', storeController.getFeaturedStores, storeController.getAllStores);
+router.get('/trending', storeController.getTrendingStores, storeController.getAllStores);
+router.get('/:id', storeController.getStore);
+
+// Reviews on a specific store
+router.route('/:id/reviews')
+    .get(reviewController.getAllReviews)
+    .post(
+        protect,
+        reviewController.setStoreUserIds, // Correct middleware
+        reviewController.createReview
+    );
 
 
-// --- Public, Store Owner, and Admin Routes ---
+// --- Protected Routes ---
+router.use(protect);
+router.post('/', restrictTo('customer', 'admin', 'store-owner'), storeController.createStore);
+router.delete('/:id', restrictTo('admin'), storeController.deleteStore);
 
-// GET /api/stores (Public)
-// POST /api/stores (Protected for Store Owners)
-router
-    .route('/')
-    .get(storeController.getAllStores)
-    .post(protect, restrictTo('store-owner'), storeController.createStore);
+router.get('/my-store', restrictTo('store-owner', 'admin'), storeController.getMyStore);
+router.put('/my-store', restrictTo('store-owner', 'admin'), storeController.updateMyStore);
+router.get('/my-store/orders', restrictTo('store-owner', 'admin'), storeController.getMyStoreOrders);
+router.patch('/my-store/orders/:orderId/status', restrictTo('store-owner', 'admin'), storeController.updateMyStoreOrderStatus);
 
-// IMPORTANT: Define specific static routes BEFORE generic parameterized routes like /:id
-
-// GET /api/stores/my-store (Protected for Store Owners)
-router
-    .route('/my-store')
-    .get(protect, restrictTo('store-owner'), storeController.getMyStore)
-    .patch(protect, restrictTo('store-owner'), storeController.updateMyStore);
-
-// GET /api/stores/my-store/orders (Protected for Store Owners)
-router.get('/my-store/orders', protect, restrictTo('store-owner'), storeController.getMyStoreOrders);
-
-// PATCH /api/stores/my-store/orders/:id/status (Protected for Store Owners)
-router.patch('/my-store/orders/:id/status', protect, restrictTo('store-owner'), storeController.updateStoreOrderStatus);
-
-
-// --- Routes with parameters (should be last) ---
-
-// GET /api/stores/some-store-id (Public)
-// PATCH /api/stores/some-store-id (Protected for Admin)
-// DELETE /api/stores/some-store-id (Protected for Admin)
-router
-    .route('/:id')
-    .get(storeController.getStore)
-    .patch(protect, restrictTo('admin'), storeController.updateStore)
-    .delete(protect, restrictTo('admin'), storeController.deleteStore);
-
+router.post('/:id/follow', storeController.followStore);
 
 module.exports = router;

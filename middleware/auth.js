@@ -5,7 +5,7 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
 exports.protect = catchAsync(async (req, res, next) => {
-  // 1) Getting token and check of it's there
+  // 1) Getting token and check if it's there
   let token;
   if (
     req.headers.authorization &&
@@ -34,29 +34,33 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
   }
 
+  // 4) Check if user changed password after the token was issued
+  // (You would need to implement this logic in the User model if needed)
+
   // GRANT ACCESS TO PROTECTED ROUTE
   req.user = currentUser;
   next();
 });
 
-// 👇 تم تعديل هذه الدالة لإضافة أوامر الطباعة
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    
-    // --- قسم التشخيص ---
-    console.log('--- DEBUG: Inside restrictTo Middleware ---');
-    console.log(`Required Roles: [${roles}]`);
-    console.log(`User's Role: "${req.user.role}"`);
-    console.log(`Does required roles include user's role? --> ${roles.includes(req.user.role)}`);
-    console.log('-------------------------------------------');
-    // --- نهاية قسم التشخيص ---
-
     if (!roles.includes(req.user.role)) {
       return next(
-        new AppError('You do not have permission to perform this action', 403)
+        new AppError('You do not have permission to perform this action.', 403)
       );
     }
-
     next();
   };
 };
+
+// Middleware to check if the user owns the store for a specific product
+exports.isStoreOwnerForProduct = catchAsync(async (req, res, next) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    return next(new AppError('No product found with that ID.', 404));
+  }
+  if (product.store.owner.toString() !== req.user.id) {
+    return next(new AppError('You are not the owner of the store that sells this product.', 403));
+  }
+  next();
+});

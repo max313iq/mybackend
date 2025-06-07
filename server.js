@@ -1,23 +1,34 @@
+// server.js (النسخة النهائية والموحدة)
 const dotenv = require('dotenv');
+
+// تحميل متغيرات البيئة - يجب أن يكون هذا أول شيء في التطبيق
+dotenv.config();
+
+// --- للتحقق فقط (يمكن حذف هذه السطور لاحقاً بعد التأكد من أن كل شيء يعمل) ---
+console.log('--- Environment Variables Check ---');
+console.log('MONGO_URI loaded:', !!process.env.MONGO_URI);
+console.log('IMAGEKIT_PUBLIC_KEY loaded:', !!process.env.IMAGEKIT_PUBLIC_KEY);
+console.log('---------------------------------');
+// -------------------------------------------------------------------
+
 const app = require('./app');
 const connectDB = require('./db');
 
-// Load environment variables from .env file
-dotenv.config();
-
-// Connect to Database
+// الاتصال بقاعدة البيانات
 connectDB();
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(
-  PORT,
-  console.log(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
+const server = app.listen(PORT, () =>
+  console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
 );
 
-// Handle unhandled promise rejections
+// التعامل مع أي خطأ غير متوقع في التطبيق (مثل خطأ في promise لم يتم التعامل معه)
 process.on('unhandledRejection', (err, promise) => {
-  console.log(`❌ Error: ${err.message}`);
-  // Close server & exit process
-  server.close(() => process.exit(1));
+    console.error(`❌ UNHANDLED REJECTION! 💥 Shutting down...`);
+    console.error(err.name, err.message);
+    // أغلق الخادم بأمان ثم أوقف العملية
+    server.close(() => {
+        process.exit(1);
+    });
 });

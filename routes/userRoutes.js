@@ -1,15 +1,22 @@
 const express = require('express');
-const authController = require('../controllers/authController');
-const userController = require('../controllers/userController'); // استيراد وحدة التحكم الجديدة
-const { protect } = require('../middleware/auth'); // استيراد دالة الحماية
+const userController = require('../controllers/userController');
+const { protect, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Public routes
-router.post('/signup', authController.signup);
-router.post('/login', authController.login);
+// Note: Authentication routes are in authRoutes.js
+// This file is for general user management, mostly for admins.
 
-// Protected route to get current user's profile
-router.get('/me', protect, userController.getMe);
+router.use(protect, restrictTo('admin'));
+
+router
+    .route('/')
+    .get(userController.getAllUsers);
+
+router
+    .route('/:id')
+    .get(userController.getUser)
+    .patch(userController.updateUser)
+    .delete(userController.deleteUser);
 
 module.exports = router;

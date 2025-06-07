@@ -1,40 +1,57 @@
 const express = require('express');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 
-// Load env vars
-dotenv.config();
+const app = express();
 
-// Route files
-const userRoutes = require('./routes/userRoutes');
+// 1. تفعيل CORS للسماح بالطلبات من أي مصدر
+app.use(cors());
+
+// 2. تفعيل body-parser للـ JSON وللـ URL-Encoded مع زيادة الحد الأقصى للحجم
+// هذا سيحل مشكلة "Payload too large" التي رأيتها سابقاً
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+
+// --- استدعاء ملفات المسارات ---
+const authRoutes = require('./routes/authRoutes');
 const storeRoutes = require('./routes/storeRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
+const comparisonRoutes = require('./routes/comparisonRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const userRoutes = require('./routes/userRoutes');
 
-const app = express();
-
-// Body parser
-app.use(express.json());
-
-// Enable CORS
-app.use(cors());
-
-// Mount routers
+// --- ربط المسارات مع التطبيق ---
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/compare', comparisonRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
-// Handle unhandled routes
+// معالجة أي مسار غير موجود
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
-// Global Error Handling Middleware
+// معالج الأخطاء العام
 app.use(globalErrorHandler);
 
 module.exports = app;

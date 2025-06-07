@@ -1,63 +1,49 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please provide your name.'],
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'A user must have a name'],
+    },
+    email: {
+      type: String,
+      required: [true, 'A user must have an email'],
+      unique: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'A user must have a password'],
+      minlength: 8,
+      select: false,
+    },
+    // ✅ قمنا بتعريف كل الصلاحيات الممكنة هنا
+    role: {
+      type: String,
+      enum: ['customer', 'store-owner', 'admin'],
+      default: 'customer', // المستخدم الجديد يبدأ كـ 'customer'
+    },
+    store: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Store'
+    }
   },
-  email: {
-    type: String,
-    required: [true, 'Please provide your email.'],
-    unique: true,
-    lowercase: true,
-  },
-  password: {
-    type: String,
-    required: [true, 'Please provide a password.'],
-    minlength: 8,
-    select: false,
-  },
-  role: {
-    type: String,
-    enum: ['user', 'admin', 'store-owner'],
-    default: 'user',
-  },
-  store: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Store',
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-}, {
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
+  {
+    timestamps: true,
+  }
+);
 
-// Virtuals for user's ratings and comments
-userSchema.virtual('ratings', {
-  ref: 'Rating',
-  localField: '_id',
-  foreignField: 'user'
-});
-
-userSchema.virtual('comments', {
-  ref: 'Comment',
-  localField: '_id',
-  foreignField: 'user'
-});
-
-
-// Encrypt password using bcrypt before saving
+// Hashing password
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
+
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-// Method to check password correctness
+// Check if password is correct
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword

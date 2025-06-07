@@ -4,27 +4,23 @@ const { protect, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All routes below are protected
+// All routes after this middleware are protected
 router.use(protect);
 
-// Route for a user to get their own orders
+router.post('/', orderController.createOrder);
 router.get('/my-orders', orderController.getMyOrders);
 
-// Route for a user to create an order
-router.post('/', restrictTo('user'), orderController.createOrder);
-
-
-// --- Admin Only Routes --- //
+// --- Admin Only Routes ---
 router.use(restrictTo('admin'));
 
-router
-    .route('/')
-    .get(orderController.getAllOrders);
+router.get('/', orderController.getAllOrders);
 
-router
-    .route('/:id')
-    .get(orderController.getOrder)
-    .patch(orderController.updateOrder)
-    .delete(orderController.deleteOrder);
+router.route('/:id')
+  .get(orderController.getOrder)
+  .delete(orderController.deleteOrder);
+
+router.patch('/:id/status', orderController.updateOrderStatus);
+router.patch('/:id/payment', orderController.updatePaymentStatus);
+router.patch('/:id/delivery', orderController.updateDeliveryStatus);
 
 module.exports = router;

@@ -4,75 +4,54 @@ const factory = require('./handlerFactory');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
-// ... (باقي الدوال مثل getMyOrders تبقى كما هي)
-
 exports.createOrder = catchAsync(async (req, res, next) => {
-    const { orderItems, shippingAddress, paymentMethod } = req.body;
+  const { orderItems, shippingAddress, paymentMethod, totalPrice, shippingPrice, taxPrice } = req.body;
 
-    if (!orderItems || orderItems.length === 0) {
-        return next(new AppError('No order items found', 400));
-    }
+  if (!orderItems || orderItems.length === 0) {
+    return next(new AppError('No order items provided', 400));
+  }
 
-    // 👇 تم تحديث هذا الجزء
-    let finalOrderItems = [];
-    let totalPrice = 0;
+  // In a real-world app, you might need to handle orders with items from multiple stores.
+  // For simplicity, we assume all items in one order belong to a single store.
+  const firstProduct = await Product.findById(orderItems[0].product);
+  if (!firstProduct) {
+      return next(new AppError('One of the products in the order was not found.', 404));
+  }
+  const storeId = firstProduct.store;
 
-    for (const item of orderItems) {
-        const product = await Product.findById(item.product);
-        if (!product) {
-            return next(new AppError(`Product with ID ${item.product} not found`, 404));
-        }
-        if (product.stock < item.quantity) {
-            return next(new AppError(`Not enough stock for ${product.name}`, 400));
-        }
-        
-        totalPrice += product.price * item.quantity;
-        
-        finalOrderItems.push({
-            ...item,
-            name: product.name,
-            image: product.images[0], // Use the first image of the product
-            price: product.price,
-            store: product.store // حفظ معرّف المتجر مع المنتج
-        });
-    }
+  const order = await Order.create({
+    orderItems,
+    user: req.user._id,
+    store: storeId,
+    shippingAddress,
+    paymentMethod,
+    totalPrice,
+    shippingPrice,
+    taxPrice,
+  });
 
-    const order = await Order.create({
-        user: req.user._id,
-        orderItems: finalOrderItems,
-        shippingAddress,
-        paymentMethod,
-        totalPrice
-    });
-    
-    // Decrement stock after successful order
-    for (const item of order.orderItems) {
-        await Product.findByIdAndUpdate(item.product, {
-            $inc: { stock: -item.quantity }
-        });
-    }
-
-    res.status(201).json({
-        status: 'success',
-        data: {
-            order
-        }
-    });
+  res.status(201).json({
+      success: true,
+      data: order
+  });
 });
 
-// ... (باقي الدوال getAllOrders, getOrder, etc. تبقى كما هي للمدير)
-exports.getAllOrders = factory.getAll(Order);
-exports.getOrder = factory.getOne(Order, { path: 'user' });
-exports.updateOrder = factory.updateOne(Order);
-exports.deleteOrder = factory.deleteOne(Order);
 exports.getMyOrders = catchAsync(async (req, res, next) => {
-    const orders = await Order.find({ user: req.user.id });
-
-    res.status(200).json({
-        status: 'success',
-        results: orders.length,
-        data: {
-            orders
-        }
-    });
+  const orders = await Order.find({ user: req.user._id });
+  res.status(200).json({
+      success: true,
+      count: orders.length,
+      data: orders
+  });
 });
+
+// Use factory functions for generic operations
+exports.getAllOrders = factory.getAll(Order);
+exports.getOrder = factory.getOne(Order, { path: 'user store' });
+exports.deleteOrder = factory.deleteOne(Order);
+
+// These will also use the generic updateOne factory function.
+// The factory will take the request body and update the order document.
+exports.updateOrderStatus = factory.updateOne(Order);
+exports.updatePaymentStatus = factory.updateOne(Order);
+exports.updateDeliveryStatus = factory.updateOne(Order);

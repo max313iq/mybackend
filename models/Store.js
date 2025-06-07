@@ -4,70 +4,65 @@ const slugify = require('slugify');
 const storeSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'A store must have a name.'],
+    required: [true, 'A store must have a name'],
     unique: true,
-    trim: true,
-    maxlength: [50, 'Store name cannot be more than 50 characters.'],
+    trim: true
   },
-  slug: String,
   description: {
     type: String,
-    trim: true,
-    maxlength: [500, 'Description cannot be more than 500 characters.'],
+    required: [true, 'A store must have a description']
   },
-  // 👇 تم تعديل هذا الحقل
-  logo: {
-    type: String, // URL to the logo image
-    required: [true, 'Store logo is required.'],
-  },
-  owner: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  products: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-  }],
   category: {
     type: String,
-    required: [true, 'Please specify a category for your store.'],
-    enum: [
-        'Electronics',
-        'Clothing',
-        'Books',
-        'Home & Kitchen',
-        'Sports & Outdoors',
-        'Health & Beauty',
-        'Toys & Games',
-        'Other'
-    ]
+    required: [true, 'A store must have a category']
   },
-  averageRating: {
+  logo: String,
+  phone: String,
+  email: String,
+  domainSlug: {
+    type: String,
+    unique: true
+  },
+  owner: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  ratingsAverage: {
     type: Number,
     default: 0,
-    min: 0,
-    max: 5,
+    min: [0, 'Rating must be above 0'],
+    max: [5, 'Rating must be below 5'],
     set: val => Math.round(val * 10) / 10
   },
   ratingsQuantity: {
-      type: Number,
-      default: 0
-  }
+    type: Number,
+    default: 0
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  rejectionReason: String,
+  followers: [{
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  }]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-storeSchema.virtual('ratings', {
-    ref: 'Rating',
-    localField: '_id',
-    foreignField: 'store'
-});
-
 storeSchema.pre('save', function(next) {
-  this.slug = slugify(this.name, { lower: true, replacement: '-' });
+  if (this.isModified('name') && !this.domainSlug) {
+    this.domainSlug = slugify(this.name, { lower: true });
+  }
   next();
 });
 
