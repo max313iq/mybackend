@@ -41,6 +41,12 @@ const orderSchema = new mongoose.Schema({
     country: { type: String, required: true },
     phone: { type: String, required: true }
   },
+  // Optional delivery area information
+  deliveryArea: {
+    name: String,
+    price: Number,
+    estimatedDays: Number
+  },
   paymentMethod: {
     type: String,
     required: true
