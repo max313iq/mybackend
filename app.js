@@ -32,12 +32,14 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const userRoutes = require('./routes/userRoutes');
+const discoveryRoutes = require('./routes/discoveryRoutes');
 
 // --- ربط المسارات مع التطبيق ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/discovery', discoveryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
