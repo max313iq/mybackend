@@ -49,7 +49,7 @@ router.get('/my-products', restrictTo('store_owner', 'admin'), productController
 
 // Using /:id for consistency
 router.route('/:id')
-    .put(restrictTo('store_owner', 'admin'), productController.updateProduct)
-    .delete(restrictTo('store_owner', 'admin'), productController.deleteProduct);
+    .put(restrictTo('store_owner', 'admin'), isStoreOwnerForProduct, productController.updateProduct)
+    .delete(restrictTo('store_owner', 'admin'), isStoreOwnerForProduct, productController.deleteProduct);
 
 module.exports = router;

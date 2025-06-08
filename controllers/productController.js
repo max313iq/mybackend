@@ -15,22 +15,96 @@ exports.setStoreId = (req, res, next) => {
     next();
 };
 
-// Use the factory for GET ALL, now passing population options
-exports.getAllProducts = factory.getAll(Product, { 
-    path: 'store', 
-    select: 'name description category' 
+// Middleware to set store ID from route param after verifying ownership
+exports.setStoreIdFromParam = catchAsync(async (req, res, next) => {
+    const storeId = req.params.storeId;
+    if (!storeId) {
+        return next(new AppError('Store ID is required.', 400));
+    }
+    if (req.user.role !== 'admin' && !(req.user.stores || []).map(id => String(id)).includes(storeId)) {
+        return next(new AppError('You do not own this store.', 403));
+    }
+    req.body.store = storeId;
+    next();
+});
+
+// Get products with optional store filter and pagination
+exports.getAllProducts = catchAsync(async (req, res, next) => {
+    const filter = {};
+    if (req.params.storeId) filter.store = req.params.storeId;
+    if (req.query.includeInactive !== 'true') filter.isActive = true;
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 12;
+    const skip = (page - 1) * limit;
+
+    const features = new APIFeatures(Product.find(filter), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .search();
+
+    const docsPromise = features.query
+      .skip(skip)
+      .limit(limit)
+      .populate({ path: 'store', select: 'name slug' });
+
+    const [products, total] = await Promise.all([
+      docsPromise,
+      Product.countDocuments(filter)
+    ]);
+
+    res.status(200).json({
+        success: true,
+        data: products,
+        pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
+        }
+    });
 });
 
 // Use the factory for GET ONE, populating all related data
 exports.getProduct = factory.getOne(Product, [
-    { path: 'store', select: 'name description' },
-    { path: 'comments' } // This will populate comments and their users
+    { path: 'store', select: 'name slug logo ratingsAverage isVerified deliverySettings' },
+    { path: 'comments' }
 ]);
 
-// Standard factory functions
-exports.createProduct = factory.createOne(Product);
-exports.updateProduct = factory.updateOne(Product);
-exports.deleteProduct = factory.deleteOne(Product);
+// Custom create function to return a tailored response
+exports.createProduct = catchAsync(async (req, res, next) => {
+    const doc = await Product.create(req.body);
+    res.status(201).json({
+        success: true,
+        data: doc,
+        message: 'Product created successfully'
+    });
+});
+
+// Standard factory functions for update/delete with custom response for update
+exports.updateProduct = catchAsync(async (req, res, next) => {
+    const doc = await Product.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true
+    });
+    if (!doc) {
+        return next(new AppError('No document found with that ID', 404));
+    }
+    res.status(200).json({
+        success: true,
+        data: doc,
+        message: 'Product updated successfully'
+    });
+});
+
+exports.deleteProduct = catchAsync(async (req, res, next) => {
+    const doc = await Product.findByIdAndDelete(req.params.id);
+    if (!doc) {
+        return next(new AppError('No document found with that ID', 404));
+    }
+    res.status(200).json({ success: true, message: 'Product deleted successfully' });
+});
 
 // Controller for getting products belonging to the logged-in store owner
 exports.getMyProducts = catchAsync(async (req, res, next) => {

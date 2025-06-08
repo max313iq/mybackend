@@ -6,10 +6,16 @@ const { protect, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Nested route: Redirect requests for products within a store to the product controller
-// This handles GET /api/stores/:storeId/products
-// This approach avoids circular dependencies between routers.
-router.get('/:storeId/products', productController.getAllProducts);
+// Nested route for products within a store
+router
+  .route('/:storeId/products')
+  .get(productController.getAllProducts)
+  .post(
+    protect,
+    restrictTo('store_owner', 'admin'),
+    productController.setStoreIdFromParam,
+    productController.createProduct
+  );
 
 // --- Public Routes ---
 router.get('/', storeController.getAllStores);
