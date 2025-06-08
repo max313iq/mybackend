@@ -79,3 +79,36 @@ Authorization: Bearer <access_token>
 
 The user must be logged in to access this endpoint. If the token is missing or invalid, the server returns a `401 Unauthorized` error.
 
+
+## Notification Endpoints
+
+### GET `/notifications`
+Retrieve notifications for the authenticated user. Supports optional query parameters:
+- `type`: `all`, `order_status_update`, `new_order`, `payment_received`, `delivery_update`
+- `isRead`: `true` or `false`
+- `page`: page number (default `1`)
+- `limit`: items per page (default `20`)
+
+Example success response:
+```json
+{
+  "success": true,
+  "data": [/* array of notifications */],
+  "unreadCount": 5,
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 45,
+    "pages": 3
+  }
+}
+```
+
+### PATCH `/notifications/:id/read`
+Mark a specific notification as read.
+
+### PATCH `/notifications/mark-all-read`
+Mark all of the user's notifications as read. Returns the number of marked documents.
+
+### DELETE `/notifications/:id`
+Delete a notification belonging to the authenticated user.
