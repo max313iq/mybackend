@@ -273,3 +273,35 @@ exports.deactivateStore = catchAsync(async (req, res, next) => {
   await store.save();
   res.status(200).json({ success: true, message: 'Store deactivated successfully' });
 });
+
+// ----- Convenience helpers for "my-store" routes -----
+exports.getCurrentUserStore = catchAsync(async (req, res, next) => {
+  const store = await Store.findOne({ owner: req.user.id });
+  if (!store) return next(new AppError('No store found for this user.', 404));
+  req.params.storeId = store._id; // for consistency with existing handlers
+  req.store = store;
+  next();
+});
+
+exports.sendCurrentStore = (req, res) => {
+  res.status(200).json({ success: true, data: req.store });
+};
+
+exports.updateCurrentUserStore = [
+  exports.getCurrentUserStore,
+  catchAsync(async (req, res, next) => {
+    Object.assign(req.store, req.body);
+    await req.store.save();
+    res.status(200).json({ success: true, data: req.store });
+  })
+];
+
+exports.getMyStoreOrders = [
+  exports.getCurrentUserStore,
+  exports.getStoreOrders
+];
+
+exports.updateMyStoreOrderStatus = [
+  exports.getCurrentUserStore,
+  (req, res, next) => exports.updateStoreOrderStatus(req, res, next)
+];

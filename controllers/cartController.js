@@ -192,6 +192,29 @@ exports.updateCartItem = catchAsync(async (req, res, next) => {
   res.status(200).json({ success: true, data: buildCartResponse(cart) });
 });
 
+exports.updateCartItemByProduct = catchAsync(async (req, res, next) => {
+  const { productId, quantity, deliveryOption } = req.body;
+
+  const cart = await Cart.findOne({ user: req.user.id });
+  if (!cart) return next(new AppError('Cart not found.', 404));
+
+  const item = cart.items.find((it) => it.product.toString() === productId);
+  if (!item) return next(new AppError('Item not found in cart.', 404));
+
+  if (quantity !== undefined) {
+    if (quantity <= 0) {
+      cart.items.id(item._id).remove();
+    } else {
+      item.quantity = quantity;
+    }
+  }
+  if (deliveryOption) item.deliveryOption = deliveryOption;
+
+  await cart.save();
+
+  res.status(200).json({ success: true, data: buildCartResponse(cart) });
+});
+
 exports.removeItemFromCart = catchAsync(async (req, res, next) => {
   const { itemId } = req.params;
 
@@ -212,6 +235,20 @@ exports.removeItemFromCart = catchAsync(async (req, res, next) => {
     data: { cartItemsCount, cartTotal },
     message: 'Item removed from cart',
   });
+});
+
+exports.removeItemByProduct = catchAsync(async (req, res, next) => {
+  const { productId } = req.params;
+  const cart = await Cart.findOne({ user: req.user.id });
+  if (!cart) return next(new AppError('Cart not found.', 404));
+
+  const index = cart.items.findIndex((it) => it.product.toString() === productId);
+  if (index === -1) return next(new AppError('Item not found in cart.', 404));
+
+  cart.items.splice(index, 1);
+  await cart.save();
+
+  res.status(200).json({ success: true, data: buildCartResponse(cart) });
 });
 
 exports.clearCart = catchAsync(async (req, res, next) => {
