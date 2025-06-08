@@ -98,8 +98,8 @@ exports.approveStore = catchAsync(async (req, res, next) => {
     if (!store) {
         return next(new AppError('No store found with that ID', 404));
     }
-    // Update the user's role to 'store-owner'
-    await User.findByIdAndUpdate(store.owner, { role: 'store-owner' });
+    // Update the user's role to 'store_owner'
+    await User.findByIdAndUpdate(store.owner, { role: 'store_owner' });
     res.status(200).json({ success: true, data: store });
 });
 

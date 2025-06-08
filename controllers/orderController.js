@@ -1,11 +1,23 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Store = require('../models/Store');
+const Notification = require('../models/Notification');
 const factory = require('./handlerFactory');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
 exports.createOrder = catchAsync(async (req, res, next) => {
-  const { orderItems, shippingAddress, paymentMethod, totalPrice, shippingPrice, taxPrice } = req.body;
+  const {
+    orderItems,
+    shippingAddress,
+    paymentMethod,
+    totalPrice,
+    shippingCost,
+    taxAmount,
+    finalTotal,
+    trackingNumber,
+    notes
+  } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
     return next(new AppError('No order items provided', 400));
@@ -26,9 +38,24 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     shippingAddress,
     paymentMethod,
     totalPrice,
-    shippingPrice,
-    taxPrice,
+    shippingCost,
+    taxAmount,
+    finalTotal,
+    trackingNumber,
+    notes,
   });
+
+  const store = await Store.findById(storeId);
+  if (store && store.owner) {
+    await Notification.create({
+      user: store.owner,
+      recipient: store.owner,
+      type: 'new_order',
+      title: 'طلب جديد',
+      message: `لديك طلب جديد رقم ${order.orderNumber}`,
+      data: { orderId: order._id }
+    });
+  }
 
   res.status(201).json({
       success: true,
