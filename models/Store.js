@@ -19,6 +19,19 @@ const storeSchema = new mongoose.Schema({
   logo: String,
   phone: String,
   email: String,
+  deliveryInfo: {
+    areas: [String],
+    freeDeliveryThreshold: Number,
+    averageDeliveryTime: Number
+  },
+  joinedDate: {
+    type: Date,
+    default: Date.now
+  },
+  followersCount: {
+    type: Number,
+    default: 0
+  },
   domainSlug: {
     type: String,
     unique: true

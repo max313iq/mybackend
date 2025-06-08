@@ -19,14 +19,22 @@ exports.getPublicStats = catchAsync(async (req, res, next) => {
 });
 
 exports.getCategoriesStats = catchAsync(async (req, res, next) => {
-    const stats = await Product.aggregate([
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-        { $sort: { count: -1 } }
+    const productStats = await Product.aggregate([
+        { $group: { _id: '$category', productsCount: { $sum: 1 } } },
+        { $sort: { productsCount: -1 } }
+    ]);
+
+    const storeStats = await Store.aggregate([
+        { $group: { _id: '$category', storesCount: { $sum: 1 } } },
+        { $sort: { storesCount: -1 } }
     ]);
 
     res.status(200).json({
         success: true,
-        data: stats
+        data: {
+            products: productStats,
+            stores: storeStats
+        }
     });
 });
 
