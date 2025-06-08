@@ -3,7 +3,7 @@ const Store = require('../models/Store');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Review = require('../models/Review');
-const Notification = require('../models/Notification');
+const { createNotification } = require('../services/notificationService');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
@@ -175,7 +175,7 @@ exports.updateUserStatus = catchAsync(async (req, res, next) => {
   if (!user) return next(new AppError('No user found with that ID', 404));
 
   if (notifyUser) {
-    await Notification.create({
+    await createNotification({
       recipient: user._id,
       type: 'account_status_update',
       title: 'تم تحديث حالة حسابك',
@@ -211,7 +211,7 @@ exports.approveStore = catchAsync(async (req, res, next) => {
 
   await User.findByIdAndUpdate(store.owner, { role: 'store_owner', status: 'active', isActive: true });
 
-  await Notification.create({
+  await createNotification({
     recipient: store.owner,
     type: 'store_approved',
     title: 'تم قبول متجرك',
@@ -240,7 +240,7 @@ exports.rejectStore = catchAsync(async (req, res, next) => {
   );
   if (!store) return next(new AppError('No store found with that ID', 404));
 
-  await Notification.create({
+  await createNotification({
     recipient: store.owner,
     type: 'store_rejected',
     title: 'تم رفض المتجر',

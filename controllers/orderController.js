@@ -1,7 +1,7 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Store = require('../models/Store');
-const Notification = require('../models/Notification');
+const { createNotification } = require('../services/notificationService');
 const factory = require('./handlerFactory');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
@@ -62,8 +62,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
 
   const store = await Store.findById(storeId);
   if (store && store.owner) {
-    await Notification.create({
-      user: store.owner,
+    await createNotification({
       recipient: store.owner,
       type: 'new_order',
       title: 'طلب جديد',
@@ -74,10 +73,35 @@ exports.createOrder = catchAsync(async (req, res, next) => {
         customerName: shippingAddress.fullName,
         amount: order.finalTotal,
         storeId: store._id,
-        storeName: store.name
+        urgency: 'high'
       },
-      priority: 'high'
+      priority: 'high',
+      actionUrl: `/store-management?tab=orders&orderId=${order._id}`
     });
+  }
+
+  // Decrease stock and check low stock
+  for (const item of itemsToUse) {
+    const prod = await Product.findById(item.product);
+    if (prod) {
+      prod.stock = Math.max(0, prod.stock - item.quantity);
+      await prod.save();
+      if (prod.stock <= prod.lowStockThreshold) {
+        await createNotification({
+          recipient: store.owner,
+          type: 'low_stock_alert',
+          title: 'تحذير: مخزون منخفض',
+          message: `المنتج ${prod.name} أوشك على النفاد (${prod.stock} قطع متبقية)`,
+          data: {
+            productId: prod._id,
+            productName: prod.name,
+            currentStock: prod.stock,
+            threshold: prod.lowStockThreshold
+          },
+          priority: 'medium'
+        });
+      }
+    }
   }
 
   res.status(201).json({
@@ -191,7 +215,7 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
   await order.save();
 
   if (order.store && order.store.owner) {
-    await Notification.create({
+    await createNotification({
       recipient: order.store.owner,
       type: 'order_cancelled',
       title: 'تم إلغاء طلب',

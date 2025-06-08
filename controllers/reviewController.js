@@ -3,7 +3,7 @@ const Review = require('../models/Review');
 const Rating = require('../models/Rating');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
-const Notification = require('../models/Notification');
+const { createNotification } = require('../services/notificationService');
 const factory = require('./handlerFactory');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
@@ -62,13 +62,17 @@ exports.createReview = catchAsync(async (req, res, next) => {
     if (product) {
         const prod = await Product.findById(product).populate('store');
         if (prod && prod.store && prod.store.owner) {
-            await Notification.create({
-                user: prod.store.owner,
+            await createNotification({
                 recipient: prod.store.owner,
                 type: 'new_review',
                 title: 'تقييم جديد',
                 message: `حصل منتجك ${prod.name} على تقييم ${review.rating} نجوم`,
-                data: { productId: prod._id, productName: prod.name, rating: review.rating, reviewId: review._id },
+                data: {
+                    productId: prod._id,
+                    productName: prod.name,
+                    rating: review.rating,
+                    reviewId: review._id
+                },
                 priority: 'medium'
             });
         }
