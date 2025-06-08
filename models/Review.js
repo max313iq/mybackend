@@ -34,6 +34,8 @@ const reviewSchema = new mongoose.Schema({
   wouldRecommend: Boolean,
   deliveryRating: Number,
   valueForMoney: Number,
+  serviceRating: Number,
+  productQualityRating: Number,
   verified: {
     type: Boolean,
     default: false

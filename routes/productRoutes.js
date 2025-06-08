@@ -2,6 +2,7 @@ const express = require('express');
 const productController = require('../controllers/productController');
 const discoveryController = require('../controllers/discoveryController');
 const commentController = require('../controllers/commentController');
+const reviewController = require('../controllers/reviewController');
 const { protect, restrictTo, isStoreOwnerForProduct } = require('../middleware/auth');
 
 const router = express.Router();
@@ -22,12 +23,18 @@ router.get('/:id', productController.getProduct);
 // --- Nested Comments/Reviews/Ratings Routes ---
 // Standardized all product-related routes to use /:id
 router.get('/:id/comments', commentController.getAllComments);
-router.get('/:id/reviews', commentController.getAllComments); // Alias for reviews
+router
+    .route('/:id/reviews')
+    .get(reviewController.getProductReviews)
+    .post(
+        protect,
+        restrictTo('customer'),
+        reviewController.setProductUserIds,
+        reviewController.createReview
+    );
 
-// POST a new comment, review, or rating
+// POST a new comment
 router.post('/:id/comments', protect, restrictTo('customer'), commentController.createComment);
-router.post('/:id/ratings', protect, restrictTo('customer'), commentController.createComment); // Alias for ratings
-router.post('/:id/reviews', protect, restrictTo('customer'), commentController.createComment); // Alias for reviews
 
 // POST a like to a specific comment
 router.post('/:id/comments/:commentId/like', protect, commentController.likeComment);

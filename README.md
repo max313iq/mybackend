@@ -110,8 +110,20 @@ Mark a specific notification as read.
 ### PATCH `/notifications/mark-all-read`
 Mark all of the user's notifications as read. Returns the number of marked documents.
 
+
 ### DELETE `/notifications/:id`
 Delete a notification belonging to the authenticated user.
+
+## Reviews & Ratings Endpoints
+
+### POST `/products/:productId/reviews`
+Add a review for a product. Requires authentication and a completed purchase.
+
+### GET `/products/:productId/reviews`
+Retrieve reviews for a product with filtering and summary statistics.
+
+### POST `/stores/:storeId/reviews`
+Add a review for a store. Requires authentication and a completed purchase.
 
 ## Search & Discovery Endpoints
 
