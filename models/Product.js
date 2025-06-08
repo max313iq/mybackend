@@ -25,9 +25,30 @@ const productSchema = new mongoose.Schema({
     required: [true, 'A product must have a stock quantity'],
     default: 0
   },
+  lowStockThreshold: {
+    type: Number,
+    default: 10
+  },
+  originalPrice: Number,
+  views: {
+    type: Number,
+    default: 0
+  },
+  soldCount: {
+    type: Number,
+    default: 0
+  },
   images: [String],
   specifications: Object,
   tags: [String],
+  deliverySettings: {
+    customDeliveryPrice: Number,
+    expressDelivery: {
+      available: Boolean,
+      price: Number,
+      estimatedDays: Number
+    }
+  },
   store: {
     type: mongoose.Schema.ObjectId,
     ref: 'Store',

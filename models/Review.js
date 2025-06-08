@@ -30,6 +30,10 @@ const reviewSchema = new mongoose.Schema({
   },
   pros: [String],
   cons: [String],
+  images: [String],
+  wouldRecommend: Boolean,
+  deliveryRating: Number,
+  valueForMoney: Number,
   verified: {
     type: Boolean,
     default: false

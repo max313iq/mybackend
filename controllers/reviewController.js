@@ -1,5 +1,8 @@
 const Review = require('../models/Review');
 const Rating = require('../models/Rating'); // -> أضف هذا السطر لاستيراد مودل التقييم
+const Order = require('../models/Order');
+const Product = require('../models/Product');
+const Notification = require('../models/Notification');
 const factory = require('./handlerFactory');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
@@ -27,7 +30,30 @@ exports.createRating = factory.createOne(Rating);
 
 exports.getAllReviews = factory.getAll(Review);
 exports.getReview = factory.getOne(Review);
-exports.createReview = factory.createOne(Review);
+exports.createReview = catchAsync(async (req, res, next) => {
+    const { product } = req.body;
+    const hasPurchased = await Order.exists({
+        user: req.user.id,
+        'orderItems.product': product,
+        status: { $ne: 'cancelled' }
+    });
+    if (!hasPurchased) {
+        return next(new AppError('You can only review products you purchased', 403));
+    }
+    const review = await Review.create(req.body);
+    const prod = await Product.findById(product).populate('store');
+    if (prod && prod.store && prod.store.owner) {
+        await Notification.create({
+            user: prod.store.owner,
+            recipient: prod.store.owner,
+            type: 'new_review',
+            title: 'تقييم جديد',
+            message: `حصل منتجك ${prod.name} على تقييم ${review.rating} نجوم`,
+            data: { productId: prod._id, productName: prod.name }
+        });
+    }
+    res.status(201).json({ success: true, data: review, message: 'Review added successfully' });
+});
 exports.updateReview = factory.updateOne(Review);
 exports.deleteReview = factory.deleteOne(Review);
 
@@ -45,11 +71,6 @@ exports.setStoreUserIds = (req, res, next) => {
     next();
 };
 
-exports.getAllReviews = factory.getAll(Review);
-exports.getReview = factory.getOne(Review);
-exports.createReview = factory.createOne(Review);
-exports.updateReview = factory.updateOne(Review);
-exports.deleteReview = factory.deleteOne(Review);
 
 // For a user to get ONLY their own reviews
 exports.getMyReviews = catchAsync(async (req, res, next) => {
