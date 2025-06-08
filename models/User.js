@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema(
     stores: [{
         type: mongoose.Schema.ObjectId,
         ref: 'Store'
-    }],
+
     refreshToken: String
   },
   {

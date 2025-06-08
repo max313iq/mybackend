@@ -17,6 +17,8 @@ const signRefreshToken = id => {
 };
 
 const createSendToken = (user, statusCode, res, message, extra = {}) => {
+
+const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
   const refreshToken = signRefreshToken(user._id);
 
@@ -37,6 +39,11 @@ const createSendToken = (user, statusCode, res, message, extra = {}) => {
   if (message) response.message = message;
 
   res.status(statusCode).json(response);
+
+    data: { user },
+    token,
+    refreshToken
+  });
 };
 
 // Helper function to filter object properties
@@ -172,3 +179,5 @@ exports.logoutUser = catchAsync(async (req, res, next) => {
 exports.register = exports.registerUser;
 exports.login = exports.loginUser;
 exports.getMe = exports.getCurrentUser;
+=======
+});

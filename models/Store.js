@@ -30,6 +30,10 @@ const storeSchema = new mongoose.Schema({
       price: Number,
       estimatedDays: Number
     }]
+  deliveryInfo: {
+    areas: [String],
+    freeDeliveryThreshold: Number,
+    averageDeliveryTime: Number
   },
   joinedDate: {
     type: Date,
@@ -48,6 +52,7 @@ const storeSchema = new mongoose.Schema({
     default: 0
   },
   slug: {
+  domainSlug: {
     type: String,
     unique: true
   },
