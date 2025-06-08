@@ -1,11 +1,9 @@
 const express = require('express');
 const productController = require('../controllers/productController');
-const reviewController = require('../controllers/reviewController');
 const commentController = require('../controllers/commentController');
 const { protect, restrictTo, isStoreOwnerForProduct } = require('../middleware/auth');
 
-// Add { mergeParams: true } to handle params from parent routers (like storeId)
-const router = express.Router({ mergeParams: true });
+const router = express.Router();
 
 // --- Public Routes ---
 router.get('/', productController.getAllProducts);
@@ -16,42 +14,42 @@ router.get('/featured', productController.aliasTopProducts('-ratingsAverage'), p
 router.get('/trending', productController.aliasTopProducts('-ratingsQuantity'), productController.getAllProducts);
 router.get('/latest', productController.aliasTopProducts('-createdAt'), productController.getAllProducts);
 
-// Nested routes for reviews, comments, ratings, and questions on a specific product
-router.route('/:id/reviews')
-    .get(reviewController.getAllReviews)
-    .post(protect, reviewController.setProductUserIds, reviewController.createReview);
+// This must be the last public GET route, now using /:id for consistency
+router.get('/:id', productController.getProduct);
 
-router.route('/:id/ratings')
-    .post(protect, reviewController.setProductUserIds, reviewController.createRating);
 
-router.route('/:id/comments')
-    .get(commentController.getAllComments)
-    .post(protect, commentController.setProductAndUserIds, commentController.createComment);
+// --- Nested Comments/Reviews/Ratings Routes ---
+// Standardized all product-related routes to use /:id
+router.get('/:id/comments', commentController.getAllComments);
+router.get('/:id/reviews', commentController.getAllComments); // Alias for reviews
 
+// POST a new comment, review, or rating
+router.post('/:id/comments', protect, restrictTo('customer'), commentController.createComment);
+router.post('/:id/ratings', protect, restrictTo('customer'), commentController.createComment); // Alias for ratings
+router.post('/:id/reviews', protect, restrictTo('customer'), commentController.createComment); // Alias for reviews
+
+// POST a like to a specific comment
+router.post('/:id/comments/:commentId/like', protect, commentController.likeComment);
+
+
+// --- Nested Questions Routes ---
 router.route('/:id/questions')
     .get(productController.getProductQuestions)
     .post(protect, productController.askQuestion);
 
-// This must be the last public GET route to avoid matching specific routes like '/featured'
-router.get('/:id', productController.getProduct);
+router.post('/:id/questions/:questionId/answer', protect, restrictTo('store-owner', 'admin'), productController.answerQuestion);
 
 
-// --- Protected Routes ---
+// --- Protected Product Management Routes ---
 router.use(protect);
 
 router.post('/', restrictTo('store-owner', 'admin'), productController.setStoreId, productController.createProduct);
 
 router.get('/my-products', restrictTo('store-owner', 'admin'), productController.getMyProducts);
 
+// Using /:id for consistency
 router.route('/:id')
-    .put(restrictTo('store-owner', 'admin'), isStoreOwnerForProduct, productController.updateProduct)
-    .delete(restrictTo('store-owner', 'admin'), isStoreOwnerForProduct, productController.deleteProduct);
-
-// Answering a question
-router.post('/:id/questions/:questionId/answer', restrictTo('store-owner', 'admin'), productController.answerQuestion);
-
-// Liking/deleting a comment
-router.post('/:id/comments/:commentId/like', commentController.likeComment);
-router.delete('/:id/comments/:commentId', commentController.deleteComment);
+    .put(restrictTo('store-owner', 'admin'), productController.updateProduct)
+    .delete(restrictTo('store-owner', 'admin'), productController.deleteProduct);
 
 module.exports = router;

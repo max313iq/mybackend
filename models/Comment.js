@@ -1,13 +1,10 @@
-// models/Comment.js
-
 const mongoose = require('mongoose');
 
 const commentSchema = new mongoose.Schema({
   text: {
     type: String,
-    required: [true, 'Comment text is required.'],
+    required: [true, 'A comment must have text.'],
     trim: true,
-    maxlength: [500, 'Comment cannot be more than 500 characters.']
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -19,18 +16,22 @@ const commentSchema = new mongoose.Schema({
     ref: 'Product',
     required: true
   },
-  // --- بداية الإضافة ---
-  likes: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }]
-  // --- نهاية الإضافة ---
+  likes: {
+    type: Number,
+    default: 0
+  }
 }, {
-  timestamps: true // Adds createdAt and updatedAt automatically
+  timestamps: true
 });
 
-// To ensure a user can comment on a product only once
-commentSchema.index({ user: 1, product: 1 }, { unique: true });
+// Automatically populate the user who made the comment
+commentSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'user',
+    select: 'name'
+  });
+  next();
+});
 
 const Comment = mongoose.model('Comment', commentSchema);
 module.exports = Comment;

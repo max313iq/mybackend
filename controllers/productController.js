@@ -14,19 +14,24 @@ exports.setStoreId = (req, res, next) => {
     next();
 };
 
-// Functions to be used in routes
-exports.getAllProducts = factory.getAll(Product);
+// Use the factory for GET ALL, now passing population options
+exports.getAllProducts = factory.getAll(Product, { 
+    path: 'store', 
+    select: 'name description category' 
+});
 
-// Updated getProduct to populate related data
+// Use the factory for GET ONE, populating all related data
 exports.getProduct = factory.getOne(Product, [
-    { path: 'reviews' },
-    { path: 'store', select: 'name description category phone email' }
+    { path: 'store', select: 'name description' },
+    { path: 'comments' } // This will populate comments and their users
 ]);
 
+// Standard factory functions
 exports.createProduct = factory.createOne(Product);
 exports.updateProduct = factory.updateOne(Product);
 exports.deleteProduct = factory.deleteOne(Product);
 
+// Controller for getting products belonging to the logged-in store owner
 exports.getMyProducts = catchAsync(async (req, res, next) => {
     if (!req.user.store) {
         return next(new AppError('You do not have a store to list products from.', 404));
@@ -39,6 +44,7 @@ exports.getMyProducts = catchAsync(async (req, res, next) => {
     });
 });
 
+// Controller for getting all unique product categories
 exports.getProductCategories = catchAsync(async (req, res, next) => {
     const categories = await Product.distinct('category');
     res.status(200).json({
@@ -47,6 +53,7 @@ exports.getProductCategories = catchAsync(async (req, res, next) => {
     });
 });
 
+// Controller for advanced product search
 exports.advancedProductSearch = catchAsync(async (req, res, next) => {
     const features = new APIFeatures(Product.find(), req.body)
       .filter()
@@ -62,7 +69,7 @@ exports.advancedProductSearch = catchAsync(async (req, res, next) => {
     });
 });
 
-// For featured, trending, latest products
+// Alias for getting top products based on different criteria
 exports.aliasTopProducts = (sort, limit = 5) => {
     return (req, res, next) => {
         req.query.limit = req.query.limit || String(limit);
@@ -71,34 +78,24 @@ exports.aliasTopProducts = (sort, limit = 5) => {
     };
 };
 
-
-// --- Product Questions ---
+// --- Product Questions Controllers ---
 
 exports.askQuestion = catchAsync(async (req, res, next) => {
     const { question } = req.body;
     const productId = req.params.id;
-
     const newQuestion = await Question.create({
         product: productId,
         user: req.user.id,
         question: question
     });
-
-    res.status(201).json({
-        success: true,
-        data: newQuestion
-    });
+    res.status(201).json({ success: true, data: newQuestion });
 });
 
 exports.answerQuestion = catchAsync(async (req, res, next) => {
     const { questionId } = req.params;
     const { answer } = req.body;
 
-    const question = await Question.findById(questionId).populate({
-        path: 'product',
-        select: 'store'
-    });
-
+    const question = await Question.findById(questionId);
     if (!question) {
         return next(new AppError('No question found with that ID.', 404));
     }
@@ -112,16 +109,11 @@ exports.answerQuestion = catchAsync(async (req, res, next) => {
     question.answeredBy = req.user.id;
     question.answeredAt = Date.now();
     await question.save();
-
-    res.status(200).json({
-        success: true,
-        data: question
-    });
+    res.status(200).json({ success: true, data: question });
 });
 
 exports.getProductQuestions = catchAsync(async (req, res, next) => {
     const questions = await Question.find({ product: req.params.id });
-
     res.status(200).json({
         success: true,
         count: questions.length,

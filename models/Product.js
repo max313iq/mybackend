@@ -33,6 +33,15 @@ const productSchema = new mongoose.Schema({
     ref: 'Store',
     required: true
   },
+  // References to separate Comment and Rating documents
+  comments: [{
+    type: mongoose.Schema.ObjectId,
+    ref: 'Comment'
+  }],
+  ratings: [{
+    type: mongoose.Schema.ObjectId,
+    ref: 'Rating'
+  }],
   ratingsAverage: {
     type: Number,
     default: 0,
@@ -46,8 +55,8 @@ const productSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  toJSON: { virtuals: true }, // تفعيل ظهور الحقول الافتراضية عند تحويل البيانات إلى JSON
-  toObject: { virtuals: true } // تفعيل ظهور الحقول الافتراضية عند تحويل البيانات إلى كائن
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 productSchema.pre('save', function(next) {
@@ -55,16 +64,12 @@ productSchema.pre('save', function(next) {
   next();
 });
 
-// --- بداية التعديل ---
-// إنشاء علاقة افتراضية مع مودل التقييمات (Review)
-// هذا يسمح لنا بجلب التقييمات مع المنتج دون حفظها في قاعدة بيانات المنتج
+// Virtual 'reviews' field that populates from the Rating model
 productSchema.virtual('reviews', {
-  ref: 'Review',
+  ref: 'Rating',
   foreignField: 'product',
   localField: '_id'
 });
-// --- نهاية التعديل ---
-
 
 const Product = mongoose.model('Product', productSchema);
 
