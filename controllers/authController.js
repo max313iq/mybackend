@@ -70,7 +70,6 @@ exports.loginUser = catchAsync(async (req, res, next) => {
   user.lastLogin = Date.now();
   await user.save({ validateBeforeSave: false });
 
-  createSendToken(user, 200, res);
   const stores = await Store.find({ owner: user._id }).select('_id');
   const storeIds = stores.map(s => s._id);
 
