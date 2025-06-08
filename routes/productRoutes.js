@@ -1,12 +1,13 @@
 const express = require('express');
 const productController = require('../controllers/productController');
+const discoveryController = require('../controllers/discoveryController');
 const commentController = require('../controllers/commentController');
 const { protect, restrictTo, isStoreOwnerForProduct } = require('../middleware/auth');
 
 const router = express.Router();
 
 // --- Public Routes ---
-router.get('/', productController.getAllProducts);
+router.get('/', discoveryController.searchProducts);
 router.post('/search', productController.advancedProductSearch);
 router.get('/categories', productController.getProductCategories);
 

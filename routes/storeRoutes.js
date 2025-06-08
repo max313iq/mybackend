@@ -3,6 +3,7 @@ const storeController = require('../controllers/storeController');
 const reviewController = require('../controllers/reviewController');
 const productController = require('../controllers/productController'); // Import the controller directly
 const analyticsController = require('../controllers/analyticsController');
+const discoveryController = require('../controllers/discoveryController');
 const { protect, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
@@ -19,7 +20,7 @@ router
   );
 
 // --- Public Routes ---
-router.get('/', storeController.getAllStores);
+router.get('/', discoveryController.searchStores);
 router.get('/featured', storeController.getFeaturedStores, storeController.getAllStores);
 router.get('/trending', storeController.getTrendingStores, storeController.getAllStores);
 router.get('/:storeId', storeController.getStore);

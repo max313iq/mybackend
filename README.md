@@ -112,3 +112,15 @@ Mark all of the user's notifications as read. Returns the number of marked docum
 
 ### DELETE `/notifications/:id`
 Delete a notification belonging to the authenticated user.
+
+## Search & Discovery Endpoints
+
+### GET `/products`
+Retrieve public products with advanced filtering and pagination. Supports query parameters:
+`search`, `category`, `store`, `minPrice`, `maxPrice`, `brand`, `rating`, `hasDiscount`, `inStock`, `freeDelivery`, `expressDelivery`, `sort`, `page` and `limit`.
+
+### GET `/stores`
+List public stores with filters. Query parameters include `search`, `category`, `rating`, `verified`, `hasProducts`, `deliveryAreas`, `sort`, `page` and `limit`.
+
+### GET `/categories`
+Return product/store categories with statistics including product and store counts and average prices.
