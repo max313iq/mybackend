@@ -1,6 +1,6 @@
 const Store = require('../models/Store');
 const Order = require('../models/Order');
-const Notification = require('../models/Notification');
+const { createNotification } = require('../services/notificationService');
 const factory = require('./handlerFactory');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
@@ -168,7 +168,7 @@ exports.updateStoreOrderStatus = catchAsync(async (req, res, next) => {
     order.statusHistory.push({ status, timestamp: new Date(), note: notes });
     await order.save();
 
-    await Notification.create({
+    await createNotification({
         recipient: order.user,
         type: 'order_status_update',
         title: 'تم تحديث حالة طلبك',
@@ -177,9 +177,11 @@ exports.updateStoreOrderStatus = catchAsync(async (req, res, next) => {
             orderId: order._id,
             orderNumber: order.orderNumber,
             newStatus: status,
-            trackingNumber: order.trackingNumber
+            trackingNumber: order.trackingNumber,
+            estimatedDelivery: order.estimatedDelivery
         },
-        priority: 'high'
+        priority: 'high',
+        actionUrl: `/orders/${order._id}`
     });
 
     res.status(200).json({

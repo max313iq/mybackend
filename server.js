@@ -11,15 +11,20 @@ console.log('IMAGEKIT_PUBLIC_KEY loaded:', !!process.env.IMAGEKIT_PUBLIC_KEY);
 console.log('---------------------------------');
 // -------------------------------------------------------------------
 
+const http = require('http');
 const app = require('./app');
 const connectDB = require('./db');
+const { init } = require('./socket');
 
 // الاتصال بقاعدة البيانات
 connectDB();
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () =>
+const httpServer = http.createServer(app);
+init(httpServer);
+
+const server = httpServer.listen(PORT, () =>
   console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
 );
 
