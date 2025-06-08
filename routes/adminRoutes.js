@@ -8,6 +8,12 @@ router.use(protect, restrictTo('admin'));
 
 // Stats Routes
 router.get('/dashboard', adminController.getDashboard);
+router.get('/stats/overview', adminController.getOverviewStats);
+router.get('/stats/users', adminController.getUserStats);
+router.get('/stats/orders', adminController.getOrderStats);
+router.get('/stats/revenue', adminController.getRevenueStats);
+router.get('/stats/products', adminController.getProductStats);
+router.get('/stats/stores', adminController.getStoreStats);
 
 // User Management
 router.get('/users', adminController.getAllUsers);

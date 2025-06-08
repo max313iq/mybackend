@@ -11,6 +11,7 @@ router.post('/', orderController.createOrder);
 router.get('/my-orders', orderController.getMyOrders);
 router.get('/:id', orderController.getOrder);
 router.patch('/:id/cancel', orderController.cancelOrder);
+router.delete('/:id', orderController.cancelOrder);
 
 // --- Admin Only Routes ---
 router.use(restrictTo('admin'));

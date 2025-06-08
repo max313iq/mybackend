@@ -32,6 +32,13 @@ router
         reviewController.setProductUserIds,
         reviewController.createReview
     );
+router.post(
+    '/:id/ratings',
+    protect,
+    restrictTo('customer'),
+    reviewController.setProductUserIds,
+    reviewController.createRating
+);
 
 // POST a new comment
 router.post('/:id/comments', protect, restrictTo('customer'), commentController.createComment);

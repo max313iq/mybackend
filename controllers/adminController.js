@@ -270,3 +270,50 @@ exports.flagReview = catchAsync(async (req, res, next) => {
 
   res.status(200).json({ success: true, message: 'Review has been flagged for moderation.' });
 });
+
+// ----- Stats Endpoints -----
+exports.getOverviewStats = catchAsync(async (req, res, next) => {
+  const [totalUsers, totalStores, totalProducts, totalOrders, revenueAgg] = await Promise.all([
+    User.countDocuments(),
+    Store.countDocuments(),
+    Product.countDocuments(),
+    Order.countDocuments(),
+    Order.aggregate([{ $match: { status: 'delivered' } }, { $group: { _id: null, total: { $sum: '$finalTotal' } } }])
+  ]);
+  const totalRevenue = revenueAgg[0] ? revenueAgg[0].total : 0;
+  res.status(200).json({ success: true, data: { totalUsers, totalStores, totalProducts, totalOrders, totalRevenue } });
+});
+
+exports.getUserStats = catchAsync(async (req, res, next) => {
+  const totalUsers = await User.countDocuments();
+  const activeUsers = await User.countDocuments({ isActive: true });
+  const storeOwners = await User.countDocuments({ role: 'store_owner' });
+  res.status(200).json({ success: true, data: { totalUsers, activeUsers, storeOwners } });
+});
+
+exports.getOrderStats = catchAsync(async (req, res, next) => {
+  const totalOrders = await Order.countDocuments();
+  const delivered = await Order.countDocuments({ status: 'delivered' });
+  const pending = await Order.countDocuments({ status: 'pending' });
+  res.status(200).json({ success: true, data: { totalOrders, delivered, pending } });
+});
+
+exports.getRevenueStats = catchAsync(async (req, res, next) => {
+  const agg = await Order.aggregate([
+    { $match: { status: 'delivered' } },
+    { $group: { _id: null, revenue: { $sum: '$finalTotal' } } }
+  ]);
+  res.status(200).json({ success: true, data: { totalRevenue: agg[0] ? agg[0].revenue : 0 } });
+});
+
+exports.getProductStats = catchAsync(async (req, res, next) => {
+  const totalProducts = await Product.countDocuments();
+  const activeProducts = await Product.countDocuments({ isActive: true });
+  res.status(200).json({ success: true, data: { totalProducts, activeProducts } });
+});
+
+exports.getStoreStats = catchAsync(async (req, res, next) => {
+  const totalStores = await Store.countDocuments();
+  const verifiedStores = await Store.countDocuments({ isVerified: true });
+  res.status(200).json({ success: true, data: { totalStores, verifiedStores } });
+});

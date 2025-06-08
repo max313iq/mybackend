@@ -39,6 +39,10 @@ router.use(protect);
 
 router.post('/', restrictTo('customer', 'admin', 'store_owner'), storeController.createStore);
 router.get('/my-stores', restrictTo('store_owner', 'admin'), storeController.getMyStores);
+router.get('/my-store', restrictTo('store_owner', 'admin'), storeController.getCurrentUserStore, storeController.sendCurrentStore);
+router.put('/my-store', restrictTo('store_owner', 'admin'), storeController.updateCurrentUserStore);
+router.get('/my-store/orders', restrictTo('store_owner', 'admin'), storeController.getMyStoreOrders);
+router.patch('/my-store/orders/:orderId/status', restrictTo('store_owner', 'admin'), storeController.updateMyStoreOrderStatus);
 router.put('/:storeId', restrictTo('store_owner', 'admin'), storeController.updateStore);
 router.delete('/:storeId', restrictTo('store_owner', 'admin'), storeController.deactivateStore);
 router.get('/:storeId/orders', restrictTo('store_owner', 'admin'), storeController.getStoreOrders);
