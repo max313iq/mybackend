@@ -101,11 +101,17 @@ exports.followStore = catchAsync(async (req, res, next) => {
 
     if (isFollowing) {
         // Unfollow
-        await Store.findByIdAndUpdate(req.params.id, { $pull: { followers: req.user.id } });
+        await Store.findByIdAndUpdate(
+            req.params.id,
+            { $pull: { followers: req.user.id }, $inc: { followersCount: -1 } }
+        );
         res.status(200).json({ success: true, message: 'Successfully unfollowed the store.' });
     } else {
         // Follow
-        await Store.findByIdAndUpdate(req.params.id, { $addToSet: { followers: req.user.id } });
+        await Store.findByIdAndUpdate(
+            req.params.id,
+            { $addToSet: { followers: req.user.id }, $inc: { followersCount: 1 } }
+        );
         res.status(200).json({ success: true, message: 'Successfully followed the store.' });
     }
 });

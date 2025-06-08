@@ -6,15 +6,29 @@ const notificationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  recipient: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  },
+  type: String,
+  title: String,
   message: {
     type: String,
     required: true
   },
+  data: Object,
   isRead: {
     type: Boolean,
     default: false
   },
-  link: String // Optional link for the notification
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'low'
+  },
+  actionUrl: String,
+  readAt: Date,
+  link: String // Optional link for backward compatibility
 }, {
   timestamps: true
 });
