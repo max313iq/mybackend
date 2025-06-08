@@ -16,7 +16,8 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     taxAmount,
     finalTotal,
     trackingNumber,
-    notes
+    notes,
+    deliveryArea
   } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
@@ -36,9 +37,10 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     user: req.user._id,
     store: storeId,
     shippingAddress,
+    deliveryArea,
     paymentMethod,
     totalPrice,
-    shippingCost,
+    shippingCost: shippingCost || (deliveryArea ? deliveryArea.price : 0),
     taxAmount,
     finalTotal,
     trackingNumber,

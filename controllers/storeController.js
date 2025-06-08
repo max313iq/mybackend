@@ -38,6 +38,7 @@ exports.getMyStores = catchAsync(async (req, res, next) => {
     const s = statMap[store._id.toString()] || {};
     return {
       ...store.toObject(),
+      rating: store.ratingsAverage,
       totalSales: s.totalSales || 0,
       monthlyRevenue: s.monthlyRevenue || 0,
       pendingOrders: s.pendingOrders || 0,
@@ -89,12 +90,42 @@ exports.getStoreOrders = catchAsync(async (req, res, next) => {
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
 
-    const orders = await Order.find(query).skip(skip).limit(limit);
+    const orders = await Order.find(query)
+        .populate('user', 'name email phone')
+        .populate('orderItems.product', 'name images')
+        .skip(skip)
+        .limit(limit);
     const total = await Order.countDocuments(query);
+
+    const formatted = orders.map(o => ({
+        _id: o._id,
+        orderNumber: o.orderNumber,
+        customer: o.user,
+        items: o.orderItems.map(i => ({
+            product: i.product,
+            quantity: i.quantity,
+            price: i.price,
+            total: i.price * i.quantity
+        })),
+        totalAmount: o.totalPrice,
+        shippingCost: o.shippingCost,
+        taxAmount: o.taxAmount,
+        finalTotal: o.finalTotal,
+        status: o.status,
+        paymentStatus: o.paymentStatus,
+        paymentMethod: o.paymentMethod,
+        shippingAddress: o.shippingAddress,
+        estimatedDelivery: o.estimatedDelivery,
+        trackingNumber: o.trackingNumber,
+        notes: o.notes,
+        deliveryArea: o.deliveryArea,
+        createdAt: o.createdAt,
+        updatedAt: o.updatedAt
+    }));
 
     res.status(200).json({
         success: true,
-        data: orders,
+        data: formatted,
         pagination: {
             page,
             limit,
@@ -209,6 +240,7 @@ exports.getStore = catchAsync(async (req, res, next) => {
     return next(new AppError('No store found with that ID.', 404));
   }
   const data = store.toObject();
+  data.rating = store.ratingsAverage;
   if (!req.user || store.owner._id.toString() !== req.user.id) {
     delete data.owner;
     delete data.totalSales;
