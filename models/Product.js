@@ -46,14 +46,25 @@ const productSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toJSON: { virtuals: true }, // تفعيل ظهور الحقول الافتراضية عند تحويل البيانات إلى JSON
+  toObject: { virtuals: true } // تفعيل ظهور الحقول الافتراضية عند تحويل البيانات إلى كائن
 });
 
 productSchema.pre('save', function(next) {
   this.slug = slugify(this.name, { lower: true });
   next();
 });
+
+// --- بداية التعديل ---
+// إنشاء علاقة افتراضية مع مودل التقييمات (Review)
+// هذا يسمح لنا بجلب التقييمات مع المنتج دون حفظها في قاعدة بيانات المنتج
+productSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'product',
+  localField: '_id'
+});
+// --- نهاية التعديل ---
+
 
 const Product = mongoose.model('Product', productSchema);
 

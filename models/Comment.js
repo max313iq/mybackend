@@ -1,3 +1,5 @@
+// models/Comment.js
+
 const mongoose = require('mongoose');
 
 const commentSchema = new mongoose.Schema({
@@ -16,7 +18,13 @@ const commentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
     required: true
-  }
+  },
+  // --- بداية الإضافة ---
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
+  // --- نهاية الإضافة ---
 }, {
   timestamps: true // Adds createdAt and updatedAt automatically
 });

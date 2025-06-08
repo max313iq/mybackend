@@ -1,8 +1,35 @@
 const Review = require('../models/Review');
+const Rating = require('../models/Rating'); // -> أضف هذا السطر لاستيراد مودل التقييم
 const factory = require('./handlerFactory');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const APIFeatures = require('../utils/apiFeatures');
+
+// Middleware to set IDs for nested routes on PRODUCTS
+exports.setProductUserIds = (req, res, next) => {
+  if (!req.body.product) req.body.product = req.params.id;
+  if (!req.body.user) req.body.user = req.user.id;
+  next();
+};
+
+// Middleware to set IDs for nested routes on STORES
+exports.setStoreUserIds = (req, res, next) => {
+    if (!req.body.store) req.body.store = req.params.id;
+    if (!req.body.user) req.body.user = req.user.id;
+    next();
+};
+
+// --- بداية الإضافة ---
+// دالة جديدة لإنشاء تقييم (rating) فقط
+exports.createRating = factory.createOne(Rating);
+// --- نهاية الإضافة ---
+
+
+exports.getAllReviews = factory.getAll(Review);
+exports.getReview = factory.getOne(Review);
+exports.createReview = factory.createOne(Review);
+exports.updateReview = factory.updateOne(Review);
+exports.deleteReview = factory.deleteOne(Review);
 
 // Middleware to set IDs for nested routes on PRODUCTS
 exports.setProductUserIds = (req, res, next) => {

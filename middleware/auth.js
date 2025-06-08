@@ -1,6 +1,7 @@
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Product = require('../models/Product'); // تم إضافة هذا السطر لإصلاح خطأ محتمل
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
@@ -44,6 +45,13 @@ exports.protect = catchAsync(async (req, res, next) => {
 
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
+    // --- سطور للطباعة والتأكد ---
+    console.log('--- DEBUGGING ROLES ---');
+    console.log('User Role from DB:', `'${req.user.role}'`); // طباعة الدور بين علامتي اقتباس مفردة لكشف المسافات
+    console.log('Allowed Roles for this Route:', roles);
+    console.log('-----------------------');
+    // -----------------------------
+
     if (!roles.includes(req.user.role)) {
       return next(
         new AppError('You do not have permission to perform this action.', 403)
@@ -59,6 +67,8 @@ exports.isStoreOwnerForProduct = catchAsync(async (req, res, next) => {
   if (!product) {
     return next(new AppError('No product found with that ID.', 404));
   }
+  // The line below assumes product.store is populated with the owner. 
+  // A check might be needed if it's not always populated.
   if (product.store.owner.toString() !== req.user.id) {
     return next(new AppError('You are not the owner of the store that sells this product.', 403));
   }

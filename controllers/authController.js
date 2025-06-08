@@ -33,12 +33,9 @@ const filterObj = (obj, ...allowedFields) => {
 };
 
 exports.register = catchAsync(async (req, res, next) => {
-  const newUser = await User.create({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    role: req.body.role
-  });
+  // تم تعديل هذه الدالة لتمرير كامل الجسم (body) بشكل مباشر
+  // هذا يضمن أن جميع الحقول المرسلة (name, email, password, role) سيتم استخدامها
+  const newUser = await User.create(req.body);
 
   createSendToken(newUser, 201, res);
 });
