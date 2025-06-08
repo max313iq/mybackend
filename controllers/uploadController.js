@@ -1,5 +1,7 @@
 const multer = require('multer');
-const imagekit = require('../utils/imagekit'); // تأكد من أن هذا الملف آمن ويستخدم process.env
+const sharp = require('sharp');
+const { v4: uuidv4 } = require('uuid');
+const imagekit = require('../utils/imagekit');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
@@ -27,64 +29,85 @@ exports.uploadSingleImage = upload.single('image');
 exports.uploadMultipleImages = upload.array('images', 10);
 
 
+// Helper to process and upload a single image buffer to ImageKit
+const processAndUpload = async (file, options) => {
+  const { type = 'general', maxWidth, quality } = options;
+  const id = uuidv4();
+
+  let pipeline = sharp(file.buffer);
+  if (maxWidth) {
+    pipeline = pipeline.resize({ width: parseInt(maxWidth, 10), withoutEnlargement: true });
+  }
+  const q = quality ? parseInt(quality, 10) : 80;
+  const processedBuffer = await pipeline.jpeg({ quality: q }).toBuffer();
+  const metadata = await sharp(processedBuffer).metadata();
+
+  const folder = `digital-market-assets/${type}`;
+  const mainUpload = await imagekit.upload({
+    file: processedBuffer,
+    fileName: `${id}.jpg`,
+    folder
+  });
+
+  const thumbBuffer = await sharp(processedBuffer).resize({ width: 200 }).toBuffer();
+  const thumbUpload = await imagekit.upload({
+    file: thumbBuffer,
+    fileName: `${id}_thumb.jpg`,
+    folder: `${folder}/thumbnails`
+  });
+
+  return {
+    url: mainUpload.url,
+    thumbnailUrl: thumbUpload.url,
+    filename: mainUpload.name,
+    originalName: file.originalname,
+    size: processedBuffer.length,
+    mimetype: 'image/jpeg',
+    dimensions: {
+      width: metadata.width,
+      height: metadata.height
+    }
+  };
+};
+
 // دالة لمعالجة رفع الصور بعد استقبالها من Multer
 exports.handleImageUpload = catchAsync(async (req, res, next) => {
-    // في حالة رفع صورة واحدة
-    if (req.file) {
-        const result = await imagekit.upload({
-            file: req.file.buffer,
-            fileName: `img-${req.user.id}-${Date.now()}`,
-            folder: 'digital-market-assets',
-        });
-        
-        return res.status(200).json({
-            success: true,
-            data: { imageUrl: result.url }
-        });
-    }
+  if (req.file) {
+    const data = await processAndUpload(req.file, req.body);
+    return res.status(200).json({ success: true, data });
+  }
 
-    // في حالة رفع عدة صور
-    if (req.files) {
-        const uploadPromises = req.files.map(file => 
-            imagekit.upload({
-                file: file.buffer,
-                fileName: `img-${req.user.id}-${Date.now()}-${file.originalname}`,
-                folder: 'digital-market-assets',
-            })
-        );
-        
-        const results = await Promise.all(uploadPromises);
-        const imageUrls = results.map(r => r.url);
-        
-        return res.status(200).json({
-            success: true,
-            data: { imageUrls }
-        });
-    }
+  if (req.files) {
+    const results = await Promise.all(req.files.map(file => processAndUpload(file, req.body)));
+    const simplified = results.map(r => ({
+      url: r.url,
+      thumbnailUrl: r.thumbnailUrl,
+      filename: r.filename,
+      size: r.size
+    }));
+    return res.status(200).json({ success: true, data: simplified, uploaded: simplified.length, failed: 0 });
+  }
 
-    return next(new AppError('No image file uploaded.', 400));
+  return next(new AppError('No image file uploaded.', 400));
 });
 
 
 // دالة لحذف صورة
 exports.deleteImage = catchAsync(async (req, res, next) => {
-    const { imageUrl } = req.body;
-    if (!imageUrl) {
-        return next(new AppError('Please provide an image URL to delete.', 400));
-    }
+  const { imageUrl } = req.body;
+  if (!imageUrl) {
+    return next(new AppError('Please provide an image URL to delete.', 400));
+  }
 
-    // استخراج fileId من رابط الصورة
-    // مثال: https://ik.imagekit.io/your_id/folder/file_id.jpg -> file_id
-    const fileId = imagekit.getFileId(imageUrl);
+  const fileId = imagekit.getFileId(imageUrl);
+  if (!fileId) {
+    return next(new AppError('Invalid ImageKit URL provided.', 400));
+  }
 
-    if (!fileId) {
-        return next(new AppError('Invalid ImageKit URL provided.', 400));
-    }
+  await imagekit.deleteFile(fileId);
 
-    await imagekit.deleteFile(fileId);
-
-    res.status(204).json({
-        success: true,
-        data: null
-    });
+  res.status(204).json({
+    success: true,
+    data: null
+  });
 });
