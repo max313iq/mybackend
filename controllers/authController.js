@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { promisify } = require('util');
 const User = require('../models/User');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
@@ -10,8 +11,16 @@ const signToken = id => {
   });
 };
 
+const signRefreshToken = id => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+};
+
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
+  const refreshToken = signRefreshToken(user._id);
+
+  user.refreshToken = refreshToken;
+  user.save({ validateBeforeSave: false });
 
   // Remove password from output
   user.password = undefined;
@@ -19,7 +28,8 @@ const createSendToken = (user, statusCode, res) => {
   res.status(statusCode).json({
     success: true,
     data: { user },
-    token
+    token,
+    refreshToken
   });
 };
 
@@ -130,5 +140,16 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.passwordResetExpires = undefined;
   await user.save();
 
+  createSendToken(user, 200, res);
+});
+
+exports.refreshToken = catchAsync(async (req, res, next) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return next(new AppError('No refresh token provided', 400));
+  const decoded = await promisify(jwt.verify)(refreshToken, process.env.JWT_SECRET);
+  const user = await User.findById(decoded.id);
+  if (!user || user.refreshToken !== refreshToken) {
+    return next(new AppError('Invalid refresh token', 401));
+  }
   createSendToken(user, 200, res);
 });

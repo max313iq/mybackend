@@ -28,7 +28,8 @@ const userSchema = new mongoose.Schema(
     store: {
         type: mongoose.Schema.ObjectId,
         ref: 'Store'
-    }
+    },
+    refreshToken: String
   },
   {
     timestamps: true,

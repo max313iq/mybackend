@@ -41,6 +41,14 @@ const productSchema = new mongoose.Schema({
   images: [String],
   specifications: Object,
   tags: [String],
+  deliverySettings: {
+    customDeliveryPrice: Number,
+    expressDelivery: {
+      available: Boolean,
+      price: Number,
+      estimatedDays: Number
+    }
+  },
   store: {
     type: mongoose.Schema.ObjectId,
     ref: 'Store',

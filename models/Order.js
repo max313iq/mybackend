@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
+  orderNumber: {
+    type: String,
+    unique: true
+  },
   orderItems: [
     {
       product: {
@@ -15,7 +19,8 @@ const orderSchema = new mongoose.Schema({
       price: {
         type: Number,
         required: true
-      }
+      },
+      deliveryOption: String
     }
   ],
   user: {
@@ -44,14 +49,26 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  shippingPrice: {
+  shippingCost: {
     type: Number,
     default: 0
   },
-  taxPrice: {
+  taxAmount: {
     type: Number,
     default: 0
   },
+  finalTotal: Number,
+  trackingNumber: String,
+  estimatedDelivery: Date,
+  actualDelivery: Date,
+  notes: String,
+  statusHistory: [
+    {
+      status: String,
+      timestamp: Date,
+      note: String
+    }
+  ],
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled'],
@@ -69,6 +86,16 @@ const orderSchema = new mongoose.Schema({
   deliveredAt: Date
 }, {
   timestamps: true
+});
+
+orderSchema.pre('save', function(next) {
+  if (!this.orderNumber) {
+    this.orderNumber = `ORD-${Date.now()}-${Math.round(Math.random() * 1000)}`;
+  }
+  if (!this.finalTotal) {
+    this.finalTotal = (this.totalPrice || 0) + (this.shippingCost || 0) + (this.taxAmount || 0);
+  }
+  next();
 });
 
 const Order = mongoose.model('Order', orderSchema);
