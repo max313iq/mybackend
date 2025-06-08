@@ -28,6 +28,14 @@ const storeSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  productsCount: {
+    type: Number,
+    default: 0
+  },
+  reviewsCount: {
+    type: Number,
+    default: 0
+  },
   followersCount: {
     type: Number,
     default: 0

@@ -19,6 +19,22 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
       select: false,
     },
+    phone: String,
+    address: String,
+    avatar: String,
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    lastLogin: Date,
     // ✅ قمنا بتعريف كل الصلاحيات الممكنة هنا
     role: {
       type: String,
