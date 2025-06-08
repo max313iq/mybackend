@@ -45,6 +45,12 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending'
+  },
+  paymentDetails: Object,
   totalPrice: {
     type: Number,
     required: true
@@ -59,6 +65,8 @@ const orderSchema = new mongoose.Schema({
   },
   finalTotal: Number,
   trackingNumber: String,
+  deliveryCompany: String,
+  actualDeliveryPrice: Number,
   estimatedDelivery: Date,
   actualDelivery: Date,
   notes: String,

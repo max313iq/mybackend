@@ -19,16 +19,32 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
       select: false,
     },
+    phone: String,
+    address: String,
+    avatar: String,
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    lastLogin: Date,
     // ✅ قمنا بتعريف كل الصلاحيات الممكنة هنا
     role: {
       type: String,
-      enum: ['customer', 'store-owner', 'admin'],
-      default: 'customer', // المستخدم الجديد يبدأ كـ 'customer'
+      enum: ['customer', 'store_owner', 'admin'],
+      default: 'customer',
     },
-    store: {
+    stores: [{
         type: mongoose.Schema.ObjectId,
         ref: 'Store'
-    },
+
     refreshToken: String
   },
   {

@@ -7,10 +7,11 @@ const APIFeatures = require('../utils/apiFeatures');
 
 // Middleware to set user's store on the request body before creating a product
 exports.setStoreId = (req, res, next) => {
-    if (!req.user.store) {
+    const storeId = req.user.stores && req.user.stores[0];
+    if (!storeId) {
         return next(new AppError('User does not have a store. Please create a store first.', 400));
     }
-    req.body.store = req.user.store;
+    req.body.store = storeId;
     next();
 };
 
@@ -33,10 +34,11 @@ exports.deleteProduct = factory.deleteOne(Product);
 
 // Controller for getting products belonging to the logged-in store owner
 exports.getMyProducts = catchAsync(async (req, res, next) => {
-    if (!req.user.store) {
+    const storeId = req.user.stores && req.user.stores[0];
+    if (!storeId) {
         return next(new AppError('You do not have a store to list products from.', 404));
     }
-    const products = await Product.find({ store: req.user.store });
+    const products = await Product.find({ store: storeId });
     res.status(200).json({
         success: true,
         count: products.length,
@@ -101,7 +103,8 @@ exports.answerQuestion = catchAsync(async (req, res, next) => {
     }
     
     const product = await Product.findById(question.product);
-    if (product.store.toString() !== req.user.store.toString() && req.user.role !== 'admin') {
+    const storeId = req.user.stores && req.user.stores[0];
+    if (product.store.toString() !== String(storeId) && req.user.role !== 'admin') {
         return next(new AppError('You are not authorized to answer this question.', 403));
     }
 
