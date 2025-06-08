@@ -57,6 +57,7 @@ const orderSchema = new mongoose.Schema({
     default: 'pending'
   },
   paymentDetails: Object,
+  couponCode: String,
   totalPrice: {
     type: Number,
     required: true
@@ -76,6 +77,17 @@ const orderSchema = new mongoose.Schema({
   estimatedDelivery: Date,
   actualDelivery: Date,
   notes: String,
+  cancelReason: String,
+  refundMethod: {
+    type: String,
+    enum: ['original_payment', 'store_credit'],
+  },
+  refundStatus: {
+    type: String,
+    enum: ['none', 'processing', 'refunded'],
+    default: 'none'
+  },
+  refundAmount: Number,
   statusHistory: [
     {
       status: String,

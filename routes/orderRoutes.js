@@ -9,6 +9,8 @@ router.use(protect);
 
 router.post('/', orderController.createOrder);
 router.get('/my-orders', orderController.getMyOrders);
+router.get('/:id', orderController.getOrder);
+router.patch('/:id/cancel', orderController.cancelOrder);
 
 // --- Admin Only Routes ---
 router.use(restrictTo('admin'));
@@ -16,7 +18,6 @@ router.use(restrictTo('admin'));
 router.get('/', orderController.getAllOrders);
 
 router.route('/:id')
-  .get(orderController.getOrder)
   .delete(orderController.deleteOrder);
 
 router.patch('/:id/status', orderController.updateOrderStatus);
