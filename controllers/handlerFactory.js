@@ -44,8 +44,9 @@ exports.getOne = (Model, popOptions) =>
 exports.getAll = (Model, popOptions) =>
   catchAsync(async (req, res, next) => {
     let filter = {};
-    // For nested routes (e.g., getting comments for a specific product)
+    // For nested routes like /products/:id/comments or /stores/:storeId/products
     if (req.params.id) filter = { product: req.params.id };
+    if (req.params.storeId) filter = { store: req.params.storeId };
     
     let query = Model.find(filter);
 

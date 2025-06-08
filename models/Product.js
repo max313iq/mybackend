@@ -30,6 +30,16 @@ const productSchema = new mongoose.Schema({
     default: 10
   },
   originalPrice: Number,
+  brand: String,
+  weight: Number,
+  dimensions: {
+    length: Number,
+    width: Number,
+    height: Number
+  },
+  sku: String,
+  returnPolicy: String,
+  warranty: String,
   views: {
     type: Number,
     default: 0
@@ -37,6 +47,10 @@ const productSchema = new mongoose.Schema({
   soldCount: {
     type: Number,
     default: 0
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   },
   images: [String],
   specifications: Object,
@@ -83,6 +97,15 @@ const productSchema = new mongoose.Schema({
 productSchema.pre('save', function(next) {
   this.slug = slugify(this.name, { lower: true });
   next();
+});
+
+// Calculate discount percentage virtual
+productSchema.virtual('discount').get(function () {
+  if (this.originalPrice && this.price) {
+    const discount = ((this.originalPrice - this.price) / this.originalPrice) * 100;
+    return Math.round(discount * 10) / 10;
+  }
+  return 0;
 });
 
 // Virtual 'reviews' field that populates from the Rating model
