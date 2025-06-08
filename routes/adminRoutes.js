@@ -7,13 +7,7 @@ const router = express.Router();
 router.use(protect, restrictTo('admin'));
 
 // Stats Routes
-router.get('/stats/overview', adminController.getOverviewStats);
-router.get('/stats/users', adminController.getUsersStats);
-router.get('/stats/orders', adminController.getOrdersStats);
-router.get('/stats/revenue', adminController.getRevenueStats);
-router.get('/stats/products', adminController.getProductsStats);
-router.get('/stats/stores', adminController.getStoresStats);
-router.get('/stats/reviews', adminController.getReviewsStats);
+router.get('/dashboard', adminController.getDashboard);
 
 // User Management
 router.get('/users', adminController.getAllUsers);

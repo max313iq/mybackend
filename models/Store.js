@@ -89,6 +89,15 @@ const storeSchema = new mongoose.Schema(
       default: 'pending',
     },
     rejectionReason: String,
+    reviewNotes: String,
+    submittedAt: { type: Date, default: Date.now },
+    approvedAt: Date,
+    documents: [
+      {
+        type: { type: String },
+        url: String
+      }
+    ],
     followers: [
       {
         type: mongoose.Schema.ObjectId,
