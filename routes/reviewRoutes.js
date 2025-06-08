@@ -2,9 +2,19 @@ const express = require('express');
 const reviewController = require('../controllers/reviewController');
 const { protect, restrictTo } = require('../middleware/auth');
 
-const router = express.Router();
+// mergeParams: true allows access to params from parent routers (e.g., productId)
+const router = express.Router({ mergeParams: true });
 
 router.use(protect);
+
+router
+    .route('/')
+    .get(reviewController.getAllReviews) // Handles GET /api/products/:productId/reviews
+    .post(
+        restrictTo('customer'), // Only customers can leave reviews
+        reviewController.setProductUserIds, 
+        reviewController.createReview // Handles POST /api/products/:productId/reviews
+    );
 
 router.get('/my-reviews', reviewController.getMyReviews);
 

@@ -1,9 +1,8 @@
 const express = require('express');
 const commentController = require('../controllers/commentController');
-// Use destructuring here as well
 const { protect, restrictTo } = require('../middleware/auth');
 
-// mergeParams: true allows it to get params from other routers (e.g., productRouter).
+// mergeParams: true allows it to get params from parent routers (e.g., productId from productRouter)
 const router = express.Router({ mergeParams: true });
 
 // All routes below require the user to be logged in.
@@ -11,22 +10,24 @@ router.use(protect);
 
 router
   .route('/')
-  .get(commentController.getAllComments)
+  .get(commentController.getAllComments) // Handles GET /api/products/:productId/comments
   .post(
-    restrictTo('user'), // Only normal users can comment
-    commentController.setProductUserIds,
-    commentController.createComment
+    restrictTo('customer'), // Only customers can comment
+    commentController.setProductAndUserIds,
+    commentController.createComment // Handles POST /api/products/:productId/comments
   );
+
+router
+    .route('/:commentId/like')
+    .post(commentController.likeComment); // Handles POST /api/products/:productId/comments/:commentId/like
 
 router
   .route('/:id')
   .get(commentController.getComment)
   .patch(
-    commentController.checkOwner, // Check if user owns the comment before updating
     commentController.updateComment
   )
   .delete(
-    commentController.checkOwner, // Check if user owns the comment before deleting
     commentController.deleteComment
   );
 

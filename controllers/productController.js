@@ -16,7 +16,13 @@ exports.setStoreId = (req, res, next) => {
 
 // Functions to be used in routes
 exports.getAllProducts = factory.getAll(Product);
-exports.getProduct = factory.getOne(Product, { path: 'reviews' });
+
+// Updated getProduct to populate related data
+exports.getProduct = factory.getOne(Product, [
+    { path: 'reviews' },
+    { path: 'store', select: 'name description category phone email' }
+]);
+
 exports.createProduct = factory.createOne(Product);
 exports.updateProduct = factory.updateOne(Product);
 exports.deleteProduct = factory.deleteOne(Product);
@@ -97,7 +103,6 @@ exports.answerQuestion = catchAsync(async (req, res, next) => {
         return next(new AppError('No question found with that ID.', 404));
     }
     
-    // This check requires the store to be populated on the product
     const product = await Product.findById(question.product);
     if (product.store.toString() !== req.user.store.toString() && req.user.role !== 'admin') {
         return next(new AppError('You are not authorized to answer this question.', 403));
