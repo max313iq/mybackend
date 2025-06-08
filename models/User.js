@@ -41,10 +41,12 @@ const userSchema = new mongoose.Schema(
       enum: ['customer', 'store_owner', 'admin'],
       default: 'customer',
     },
-    stores: [{
+    stores: [
+      {
         type: mongoose.Schema.ObjectId,
         ref: 'Store'
-
+      }
+    ],
     refreshToken: String
   },
   {

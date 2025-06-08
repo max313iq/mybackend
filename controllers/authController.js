@@ -17,8 +17,6 @@ const signRefreshToken = id => {
 };
 
 const createSendToken = (user, statusCode, res, message, extra = {}) => {
-
-const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
   const refreshToken = signRefreshToken(user._id);
 
@@ -39,11 +37,6 @@ const createSendToken = (user, statusCode, res) => {
   if (message) response.message = message;
 
   res.status(statusCode).json(response);
-
-    data: { user },
-    token,
-    refreshToken
-  });
 };
 
 // Helper function to filter object properties
@@ -77,7 +70,6 @@ exports.loginUser = catchAsync(async (req, res, next) => {
   user.lastLogin = Date.now();
   await user.save({ validateBeforeSave: false });
 
-  createSendToken(user, 200, res);
   const stores = await Store.find({ owner: user._id }).select('_id');
   const storeIds = stores.map(s => s._id);
 
@@ -180,5 +172,3 @@ exports.logoutUser = catchAsync(async (req, res, next) => {
 exports.register = exports.registerUser;
 exports.login = exports.loginUser;
 exports.getMe = exports.getCurrentUser;
-=======
-});
