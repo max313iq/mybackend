@@ -20,6 +20,7 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: [true, 'A product must have a category']
   },
+  brand: String,
   stock: {
     type: Number,
     required: [true, 'A product must have a stock quantity'],
@@ -30,6 +31,13 @@ const productSchema = new mongoose.Schema({
     default: 10
   },
   originalPrice: Number,
+  sku: String,
+  weight: Number,
+  dimensions: {
+    length: Number,
+    width: Number,
+    height: Number
+  },
   views: {
     type: Number,
     default: 0
@@ -41,14 +49,21 @@ const productSchema = new mongoose.Schema({
   images: [String],
   specifications: Object,
   tags: [String],
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   deliverySettings: {
     customDeliveryPrice: Number,
     expressDelivery: {
       available: Boolean,
       price: Number,
       estimatedDays: Number
-    }
+    },
+    freeDeliveryThreshold: Number
   },
+  returnPolicy: String,
+  warranty: String,
   store: {
     type: mongoose.Schema.ObjectId,
     ref: 'Store',

@@ -10,6 +10,13 @@ const router = express.Router();
 // This handles GET /api/stores/:storeId/products
 // This approach avoids circular dependencies between routers.
 router.get('/:storeId/products', productController.getAllProducts);
+router.post(
+  '/:storeId/products',
+  protect,
+  restrictTo('store_owner', 'admin'),
+  productController.setStoreIdFromParam,
+  productController.createProduct
+);
 
 // --- Public Routes ---
 router.get('/', storeController.getAllStores);

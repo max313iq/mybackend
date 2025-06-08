@@ -15,10 +15,43 @@ exports.setStoreId = (req, res, next) => {
     next();
 };
 
-// Use the factory for GET ALL, now passing population options
-exports.getAllProducts = factory.getAll(Product, { 
-    path: 'store', 
-    select: 'name description category' 
+// Set store ID from route parameter if provided and ensure ownership
+exports.setStoreIdFromParam = (req, res, next) => {
+    if (req.params.storeId) {
+        const storeId = req.params.storeId;
+        if (req.user.role !== 'admin' && (!req.user.stores || !req.user.stores.map(id => String(id)).includes(String(storeId)))) {
+            return next(new AppError('You do not own this store.', 403));
+        }
+        req.body.store = storeId;
+    }
+    next();
+};
+
+// Get all products with optional store filter and ownership statistics
+exports.getAllProducts = catchAsync(async (req, res, next) => {
+    const filter = {};
+    if (req.params.storeId) {
+        filter.store = req.params.storeId;
+    }
+    if (!(req.query.includeInactive === 'true')) {
+        filter.isActive = { $ne: false };
+    }
+
+    const features = new APIFeatures(Product.find(filter), req.query)
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate();
+
+    const products = await features.query.populate({
+        path: 'store',
+        select: 'name slug logo'
+    });
+
+    res.status(200).json({
+        success: true,
+        data: products
+    });
 });
 
 // Use the factory for GET ONE, populating all related data
