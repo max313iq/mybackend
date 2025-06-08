@@ -22,6 +22,13 @@ const userSchema = new mongoose.Schema(
     phone: String,
     address: String,
     avatar: String,
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active',
+    },
+    suspendedUntil: Date,
+    suspensionReason: String,
     isActive: {
       type: Boolean,
       default: true,
