@@ -2,6 +2,7 @@ const express = require('express');
 const storeController = require('../controllers/storeController');
 const reviewController = require('../controllers/reviewController');
 const productController = require('../controllers/productController'); // Import the controller directly
+const analyticsController = require('../controllers/analyticsController');
 const { protect, restrictTo } = require('../middleware/auth');
 
 const router = express.Router();
@@ -41,6 +42,7 @@ router.put('/:storeId', restrictTo('store_owner', 'admin'), storeController.upda
 router.delete('/:storeId', restrictTo('store_owner', 'admin'), storeController.deactivateStore);
 router.get('/:storeId/orders', restrictTo('store_owner', 'admin'), storeController.getStoreOrders);
 router.patch('/:storeId/orders/:orderId/status', restrictTo('store_owner', 'admin'), storeController.updateStoreOrderStatus);
+router.get('/:storeId/analytics', restrictTo('store_owner', 'admin'), analyticsController.getStoreAnalytics);
 
 // Route for following/unfollowing a store
 router.post('/:id/follow', storeController.followStore);
