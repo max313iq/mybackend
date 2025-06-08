@@ -65,6 +65,8 @@ const orderSchema = new mongoose.Schema({
   },
   finalTotal: Number,
   trackingNumber: String,
+  deliveryCompany: String,
+  actualDeliveryPrice: Number,
   estimatedDelivery: Date,
   actualDelivery: Date,
   notes: String,

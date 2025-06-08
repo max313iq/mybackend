@@ -38,13 +38,13 @@ const userSchema = new mongoose.Schema(
     // ✅ قمنا بتعريف كل الصلاحيات الممكنة هنا
     role: {
       type: String,
-      enum: ['customer', 'store-owner', 'admin'],
-      default: 'customer', // المستخدم الجديد يبدأ كـ 'customer'
+      enum: ['customer', 'store_owner', 'admin'],
+      default: 'customer',
     },
-    store: {
+    stores: [{
         type: mongoose.Schema.ObjectId,
         ref: 'Store'
-    },
+
     refreshToken: String
   },
   {

@@ -19,6 +19,17 @@ const storeSchema = new mongoose.Schema({
   logo: String,
   phone: String,
   email: String,
+  address: String,
+  businessLicense: String,
+  taxNumber: String,
+  deliverySettings: {
+    freeDeliveryThreshold: Number,
+    defaultDeliveryPrice: Number,
+    deliveryAreas: [{
+      name: String,
+      price: Number,
+      estimatedDays: Number
+    }]
   deliveryInfo: {
     areas: [String],
     freeDeliveryThreshold: Number,
@@ -40,6 +51,7 @@ const storeSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  slug: {
   domainSlug: {
     type: String,
     unique: true
@@ -73,7 +85,11 @@ const storeSchema = new mongoose.Schema({
   followers: [{
     type: mongoose.Schema.ObjectId,
     ref: 'User'
-  }]
+  }],
+  isActive: {
+    type: Boolean,
+    default: true
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -81,8 +97,8 @@ const storeSchema = new mongoose.Schema({
 });
 
 storeSchema.pre('save', function(next) {
-  if (this.isModified('name') && !this.domainSlug) {
-    this.domainSlug = slugify(this.name, { lower: true });
+  if (this.isModified('name') && !this.slug) {
+    this.slug = slugify(this.name, { lower: true });
   }
   next();
 });

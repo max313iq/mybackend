@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 const User = require('../models/User');
+const Store = require('../models/Store');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
@@ -15,6 +16,8 @@ const signRefreshToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
+const createSendToken = (user, statusCode, res, message, extra = {}) => {
+
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
   const refreshToken = signRefreshToken(user._id);
@@ -22,11 +25,21 @@ const createSendToken = (user, statusCode, res) => {
   user.refreshToken = refreshToken;
   user.save({ validateBeforeSave: false });
 
-  // Remove password from output
-  user.password = undefined;
+  let userObj = user.toObject ? user.toObject() : user;
+  delete userObj.password;
+  userObj = { ...userObj, ...extra };
 
-  res.status(statusCode).json({
+  const response = {
     success: true,
+    data: { user: userObj },
+    token,
+    refreshToken
+  };
+
+  if (message) response.message = message;
+
+  res.status(statusCode).json(response);
+
     data: { user },
     token,
     refreshToken
@@ -42,15 +55,13 @@ const filterObj = (obj, ...allowedFields) => {
     return newObj;
 };
 
-exports.register = catchAsync(async (req, res, next) => {
-  // تم تعديل هذه الدالة لتمرير كامل الجسم (body) بشكل مباشر
-  // هذا يضمن أن جميع الحقول المرسلة (name, email, password, role) سيتم استخدامها
+exports.registerUser = catchAsync(async (req, res, next) => {
   const newUser = await User.create(req.body);
 
-  createSendToken(newUser, 201, res);
+  createSendToken(newUser, 201, res, 'User registered successfully');
 });
 
-exports.login = catchAsync(async (req, res, next) => {
+exports.loginUser = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -67,17 +78,18 @@ exports.login = catchAsync(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   createSendToken(user, 200, res);
+  const stores = await Store.find({ owner: user._id }).select('_id');
+  const storeIds = stores.map(s => s._id);
+
+  createSendToken(user, 200, res, 'Login successful', { stores: storeIds });
 });
 
-exports.getMe = (req, res, next) => {
-  req.params.id = req.user.id;
-  res.status(200).json({
-    success: true,
-    data: {
-      user: req.user
-    }
-  });
-};
+exports.getCurrentUser = catchAsync(async (req, res, next) => {
+  const stores = await Store.find({ owner: req.user.id }).select('_id');
+  const userObj = req.user.toObject();
+  userObj.stores = stores.map(s => s._id);
+  res.status(200).json({ success: true, data: userObj });
+});
 
 exports.updateProfile = catchAsync(async (req, res, next) => {
   if (req.body.password) {
@@ -89,7 +101,7 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
     );
   }
 
-  const filteredBody = filterObj(req.body, 'name', 'email', 'phone', 'address');
+  const filteredBody = filterObj(req.body, 'name', 'email', 'phone', 'address', 'avatar');
 
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
     new: true,
@@ -100,7 +112,8 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
     success: true,
     data: {
       user: updatedUser
-    }
+    },
+    message: 'Profile updated successfully'
   });
 });
 
@@ -155,4 +168,17 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
     return next(new AppError('Invalid refresh token', 401));
   }
   createSendToken(user, 200, res);
+});
+
+exports.logoutUser = catchAsync(async (req, res, next) => {
+  req.user.refreshToken = undefined;
+  await req.user.save({ validateBeforeSave: false });
+  res.status(200).json({ success: true, message: 'Logged out successfully' });
+});
+
+// Backward compatibility exports
+exports.register = exports.registerUser;
+exports.login = exports.loginUser;
+exports.getMe = exports.getCurrentUser;
+=======
 });

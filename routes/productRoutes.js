@@ -37,19 +37,19 @@ router.route('/:id/questions')
     .get(productController.getProductQuestions)
     .post(protect, productController.askQuestion);
 
-router.post('/:id/questions/:questionId/answer', protect, restrictTo('store-owner', 'admin'), productController.answerQuestion);
+router.post('/:id/questions/:questionId/answer', protect, restrictTo('store_owner', 'admin'), productController.answerQuestion);
 
 
 // --- Protected Product Management Routes ---
 router.use(protect);
 
-router.post('/', restrictTo('store-owner', 'admin'), productController.setStoreId, productController.createProduct);
+router.post('/', restrictTo('store_owner', 'admin'), productController.setStoreId, productController.createProduct);
 
-router.get('/my-products', restrictTo('store-owner', 'admin'), productController.getMyProducts);
+router.get('/my-products', restrictTo('store_owner', 'admin'), productController.getMyProducts);
 
 // Using /:id for consistency
 router.route('/:id')
-    .put(restrictTo('store-owner', 'admin'), productController.updateProduct)
-    .delete(restrictTo('store-owner', 'admin'), productController.deleteProduct);
+    .put(restrictTo('store_owner', 'admin'), productController.updateProduct)
+    .delete(restrictTo('store_owner', 'admin'), productController.deleteProduct);
 
 module.exports = router;

@@ -15,7 +15,7 @@ router.get('/:storeId/products', productController.getAllProducts);
 router.get('/', storeController.getAllStores);
 router.get('/featured', storeController.getFeaturedStores, storeController.getAllStores);
 router.get('/trending', storeController.getTrendingStores, storeController.getAllStores);
-router.get('/:id', storeController.getStore);
+router.get('/:storeId', storeController.getStore);
 
 // Nested route for reviews on a specific store
 router.route('/:id/reviews')
@@ -29,14 +29,12 @@ router.route('/:id/reviews')
 // --- Protected Routes ---
 router.use(protect);
 
-router.post('/', restrictTo('customer', 'admin', 'store-owner'), storeController.createStore);
-router.delete('/:id', restrictTo('admin'), storeController.deleteStore);
-
-// Routes for the logged-in store owner to manage their own store
-router.get('/my-store', restrictTo('store-owner', 'admin'), storeController.getMyStore);
-router.put('/my-store', restrictTo('store-owner', 'admin'), storeController.updateMyStore);
-router.get('/my-store/orders', restrictTo('store-owner', 'admin'), storeController.getMyStoreOrders);
-router.patch('/my-store/orders/:orderId/status', restrictTo('store-owner', 'admin'), storeController.updateMyStoreOrderStatus);
+router.post('/', restrictTo('customer', 'admin', 'store_owner'), storeController.createStore);
+router.get('/my-stores', restrictTo('store_owner', 'admin'), storeController.getMyStores);
+router.put('/:storeId', restrictTo('store_owner', 'admin'), storeController.updateStore);
+router.delete('/:storeId', restrictTo('store_owner', 'admin'), storeController.deactivateStore);
+router.get('/:storeId/orders', restrictTo('store_owner', 'admin'), storeController.getStoreOrders);
+router.patch('/:storeId/orders/:orderId/status', restrictTo('store_owner', 'admin'), storeController.updateStoreOrderStatus);
 
 // Route for following/unfollowing a store
 router.post('/:id/follow', storeController.followStore);
